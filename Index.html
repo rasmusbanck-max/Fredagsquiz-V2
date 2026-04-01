@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+  :root {
+    --ink:#1a1a2e;--paper:#f5f0e8;--accent:#e8572a;--accent2:#2a7ae8;
+    --soft:#ede8dc;--muted:#8a8478;--green:#2a9e6e;--red:#d63030;--yellow:#f5c842;
+    --e-bg:#fff9e8;--e-border:#f5c842;--e-text:#8a6800;
+    --c-bg:#e8f0ff;--c-border:#2a7ae8;--c-text:#1a4a9e;
+    --a-bg:#e6f7f1;--a-border:#2a9e6e;--a-text:#1a6e4a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;}
+  .screen{display:none;}.screen.active{display:block;}
+  header{background:var(--ink);color:var(--paper);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;}
+  header h1{font-family:'Fraunces',serif;font-size:1.4rem;letter-spacing:-0.02em;}
+  .week-badge{background:var(--accent);color:white;font-size:.75rem;font-weight:500;padding:4px 12px;border-radius:20px;letter-spacing:.05em;text-transform:uppercase;}
+  .mode-tabs{display:flex;gap:8px;padding:16px 24px 0;border-bottom:2px solid var(--soft);background:var(--paper);position:sticky;top:0;z-index:10;}
+  .mode-tab{padding:8px 20px 12px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:.9rem;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;}
+  .mode-tab.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:500;}
+  .enter-wrap{max-width:480px;margin:80px auto;padding:0 24px;text-align:center;}
+  .enter-wrap h2{font-family:'Fraunces',serif;font-size:2.2rem;font-weight:900;line-height:1.1;margin-bottom:8px;}
+  .enter-wrap p{color:var(--muted);margin-bottom:40px;font-size:.95rem;}
+  .code-input-wrap{display:flex;gap:10px;}
+  input[type=text],input[type=password]{flex:1;padding:14px 18px;font-size:1.1rem;font-family:'Fraunces',serif;border:2px solid var(--ink);border-radius:8px;background:white;outline:none;letter-spacing:.08em;text-transform:uppercase;}
+  input[type=text]:focus,input[type=password]:focus{border-color:var(--accent2);}
+  .btn{padding:14px 24px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;transition:background .15s,transform .1s;}
+  .btn:hover{background:var(--accent);}.btn:active{transform:scale(.97);}.btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-outline{background:transparent;border:2px solid var(--ink);color:var(--ink);}.btn-outline:hover{background:var(--ink);color:var(--paper);}
+  .btn-sm{padding:8px 16px;font-size:.85rem;}
+  .btn-tip{background:#fff9e8;color:#b07a00;border:2px solid var(--yellow);}.btn-tip:hover{background:var(--yellow);color:var(--ink);}
+  .btn-yes{background:var(--green);color:white;border:none;}.btn-yes:hover{background:#1a7a52;}
+  .btn-no{background:transparent;border:2px solid #ccc;color:var(--muted);}.btn-no:hover{border-color:var(--ink);color:var(--ink);}
+  .error-msg{color:var(--red);font-size:.85rem;margin-top:10px;min-height:20px;}
+  .quiz-wrap{max-width:680px;margin:0 auto;padding:40px 24px 80px;}
+  .progress-bar-wrap{height:4px;background:var(--soft);border-radius:4px;margin-bottom:40px;overflow:hidden;}
+  .progress-bar{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease;}
+  .subject-label{font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .question-num{font-size:.85rem;color:var(--muted);margin-bottom:6px;}
+  .question-text{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;line-height:1.3;margin-bottom:24px;}
+  .options-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+  .option-btn{padding:14px 20px;background:white;border:2px solid #ddd;border-radius:10px;text-align:left;font-family:'DM Sans',sans-serif;font-size:.95rem;cursor:pointer;transition:border-color .15s,background .15s;display:flex;align-items:center;gap:12px;}
+  .option-btn:hover{border-color:var(--accent2);background:#f0f6ff;}
+  .option-btn.selected{border-color:var(--accent2);background:#e8f0ff;}
+  .option-btn.correct{border-color:var(--green);background:#e6f7f1;}
+  .option-btn.wrong{border-color:var(--red);background:#fdf0f0;}
+  .option-letter{width:28px;height:28px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;}
+  .option-btn.selected .option-letter{background:var(--accent2);color:white;}
+  .option-btn.correct .option-letter{background:var(--green);color:white;}
+  .option-btn.wrong .option-letter{background:var(--red);color:white;}
+  .open-answer-area{margin-bottom:16px;}
+  .tip-row{margin-bottom:12px;}
+  .tip-box{background:#fff9e8;border:2px solid var(--yellow);border-radius:10px;padding:14px 18px;margin-top:10px;font-size:.9rem;line-height:1.5;}
+  .tip-box strong{display:block;margin-bottom:4px;color:#b07a00;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;}
+  textarea{width:100%;padding:14px 16px;border:2px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.95rem;resize:vertical;min-height:100px;outline:none;transition:border-color .15s;background:white;display:block;}
+  textarea:focus{border-color:var(--accent2);}
+  .level-facit{margin-top:16px;margin-bottom:12px;}
+  .level-intro{font-size:.85rem;color:var(--muted);margin-bottom:10px;font-style:italic;}
+  .level-row{border-radius:10px;padding:14px 18px;margin-bottom:8px;}
+  .level-row.e-row{background:var(--e-bg);border:2px solid var(--e-border);}
+  .level-row.c-row{background:var(--c-bg);border:2px solid var(--c-border);}
+  .level-row.a-row{background:var(--a-bg);border:2px solid var(--a-border);}
+  .level-example{font-size:.88rem;line-height:1.55;font-style:italic;color:#333;}
+  .komplettera-tip{background:white;border:2px solid var(--soft);border-radius:10px;padding:16px 20px;margin-bottom:12px;}
+  .komplettera-tip .kt-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-weight:600;}
+  .komplettera-tip .kt-text{font-size:.9rem;line-height:1.5;}
+  .facit-box{background:#e6f7f1;border:2px solid var(--green);border-radius:10px;padding:16px 20px;margin-top:12px;margin-bottom:16px;}
+  .facit-box .facit-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--green);font-weight:600;margin-bottom:6px;}
+  .facit-box .facit-text{font-size:.92rem;line-height:1.5;}
+  .self-assess{background:white;border:2px solid var(--soft);border-radius:10px;padding:16px 20px;margin-bottom:16px;}
+  .self-assess p{font-size:.9rem;font-weight:500;margin-bottom:12px;}
+  .self-assess-btns{display:flex;flex-direction:column;gap:8px;}
+  .sa-btn{padding:12px 18px;border-radius:8px;border:2px solid #ddd;background:white;font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;transition:all .15s;text-align:left;}
+  .sa-btn:hover{border-color:var(--ink);}
+  .sa-btn.sel-a{border-color:var(--a-border);background:var(--a-bg);color:var(--a-text);font-weight:600;}
+  .sa-btn.sel-c{border-color:var(--c-border);background:var(--c-bg);color:var(--c-text);font-weight:600;}
+  .sa-btn.sel-e{border-color:var(--e-border);background:var(--e-bg);color:var(--e-text);font-weight:600;}
+  .sa-btn.sel-wrong{border-color:var(--red);background:#fdf0f0;color:var(--red);font-weight:600;}
+  .komplettera-offer{background:white;border:2px solid var(--soft);border-radius:10px;padding:16px 20px;margin-bottom:16px;}
+  .komplettera-offer p{font-size:.92rem;font-weight:500;margin-bottom:14px;}
+  .offer-btns{display:flex;gap:10px;}
+  .komplettera-form .kf-label{font-size:.8rem;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+  .komplettera-done{background:#e6f7f1;border-radius:10px;padding:14px 18px;font-size:.9rem;color:var(--a-text);margin-bottom:16px;}
+  .feedback-box{padding:16px 20px;border-radius:10px;margin-bottom:24px;font-size:.9rem;line-height:1.5;display:none;}
+  .feedback-box.show{display:block;}
+  .feedback-box.correct-fb{background:#e6f7f1;border-left:4px solid var(--green);}
+  .feedback-box.wrong-fb{background:#fdf0f0;border-left:4px solid var(--red);}
+  .feedback-box strong{display:block;margin-bottom:4px;}
+  .nav-row{display:flex;justify-content:flex-end;gap:12px;margin-top:8px;}
+  .done-wrap{max-width:680px;margin:0 auto;padding:40px 24px 80px;}
+  .done-wrap h2{font-family:'Fraunces',serif;font-size:2rem;font-weight:900;margin-bottom:6px;}
+  .done-wrap .subtitle{color:var(--muted);margin-bottom:32px;}
+  .score-circle{width:110px;height:110px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 32px;font-family:'Fraunces',serif;}
+  .score-circle .score-num{font-size:2rem;font-weight:900;line-height:1;}
+  .score-circle .score-label{font-size:.7rem;opacity:.6;margin-top:2px;}
+  .review-list{display:flex;flex-direction:column;gap:16px;}
+  .review-card{background:white;border-radius:12px;padding:20px 24px;border-left:4px solid #ddd;}
+  .review-card.correct-card{border-left-color:var(--green);}
+  .review-card.partial-card{border-left-color:var(--yellow);}
+  .review-card.wrong-card{border-left-color:var(--red);}
+  .review-subject{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px;}
+  .review-q{font-family:'Fraunces',serif;font-size:1rem;font-weight:700;margin-bottom:10px;}
+  .review-answer{font-size:.88rem;color:var(--muted);margin-bottom:8px;}
+  .review-answer span{color:var(--ink);font-weight:500;}
+  .review-komplettering{background:#e8f0ff;border-radius:8px;padding:10px 14px;font-size:.88rem;line-height:1.5;margin-top:8px;}
+  .review-komplettering strong{color:var(--accent2);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:2px;}
+  .teacher-pin-wrap{max-width:400px;margin:80px auto;padding:0 24px;text-align:center;}
+  .teacher-pin-wrap h2{font-family:'Fraunces',serif;font-size:1.8rem;font-weight:900;margin-bottom:8px;}
+  .teacher-pin-wrap p{color:var(--muted);margin-bottom:28px;font-size:.9rem;}
+  .teacher-wrap{max-width:800px;margin:0 auto;padding:40px 24px 80px;}
+  .teacher-wrap h2{font-family:'Fraunces',serif;font-size:2rem;font-weight:900;margin-bottom:6px;}
+  .t-subtitle{color:var(--muted);margin-bottom:32px;font-size:.9rem;}
+  .insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;}
+  @media(max-width:600px){.insights-grid{grid-template-columns:1fr 1fr;}}
+  .insight-card{background:white;border-radius:12px;padding:20px 24px;}
+  .insight-card .card-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px;}
+  .insight-card .card-value{font-family:'Fraunces',serif;font-size:2rem;font-weight:900;line-height:1;}
+  .insight-card .card-sub{font-size:.82rem;color:var(--muted);margin-top:4px;}
+  .section-title{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;margin-bottom:14px;margin-top:32px;}
+  .student-table{background:white;border-radius:12px;overflow:hidden;}
+  .student-table table{width:100%;border-collapse:collapse;font-size:.88rem;}
+  .student-table th{background:var(--ink);color:var(--paper);padding:12px 16px;text-align:left;font-weight:500;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;}
+  .student-table td{padding:12px 16px;border-bottom:1px solid var(--soft);vertical-align:top;}
+  .student-table tr:last-child td{border-bottom:none;}
+  .student-table tr.clickable:hover td{background:#fafaf8;cursor:pointer;}
+  .score-pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.8rem;font-weight:500;}
+  .score-high{background:#e6f7f1;color:var(--green);}
+  .score-mid{background:#fff3e0;color:#e08020;}
+  .score-low{background:#fdf0f0;color:var(--red);}
+  .flag-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:500;margin:2px 2px 0 0;}
+  .chip-over2{background:#fdf0f0;color:var(--red);border:1px solid #f5b0b0;}
+  .chip-over1{background:#fff3e0;color:#c06000;border:1px solid #f5d080;}
+  .chip-under2{background:#e8f0ff;color:var(--accent2);border:1px solid #90b8f5;}
+  .chip-under1{background:#f0f4ff;color:#5080c0;border:1px solid #c0d4f5;}
+  .chip-tip{background:#fff9e8;color:#b07a00;border:1px solid var(--yellow);}
+  .chip-komp{background:#e8f0ff;color:var(--accent2);border:1px solid var(--accent2);}
+  .chip-declined{background:var(--soft);color:var(--muted);border:1px solid #ccc;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center;padding:24px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--paper);border-radius:16px;max-width:640px;width:100%;max-height:84vh;overflow-y:auto;padding:32px;}
+  .modal h3{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:900;margin-bottom:4px;}
+  .modal-meta{color:var(--muted);font-size:.85rem;margin-bottom:24px;}
+  .mq{background:white;border-radius:10px;padding:18px 20px;margin-bottom:12px;border-left:4px solid #eee;}
+  .mq.mq-ok{border-left-color:var(--green);}
+  .mq.mq-warn2{border-left-color:var(--red);}
+  .mq.mq-warn1{border-left-color:var(--yellow);}
+  .mq.mq-info{border-left-color:var(--accent2);}
+  .mq-subject{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px;}
+  .mq-qtext{font-weight:600;font-size:.95rem;margin-bottom:10px;line-height:1.4;}
+  .mq-answer{font-size:.88rem;padding:8px 12px;background:var(--soft);border-radius:6px;margin-bottom:8px;line-height:1.5;}
+  .mq-flag{font-size:.85rem;padding:10px 14px;border-radius:8px;margin-bottom:6px;line-height:1.5;}
+  .mq-flag.flag-mismatch2{background:#fdf0f0;border-left:3px solid var(--red);}
+  .mq-flag.flag-mismatch1{background:#fff3e0;border-left:3px solid var(--yellow);}
+  .mq-flag.flag-ok{background:#e6f7f1;border-left:3px solid var(--green);}
+  .mq-flag.flag-under2{background:#e8f0ff;border-left:3px solid var(--accent2);}
+  .mq-flag.flag-under1{background:#f0f4ff;border-left:3px solid #90b8f5;}
+  .mq-komp{font-size:.88rem;padding:10px 14px;background:#e8f0ff;border-radius:8px;margin-top:6px;}
+  .mq-komp-label{font-size:.75rem;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+  .mq-no-komp{font-size:.82rem;color:var(--muted);font-style:italic;margin-top:6px;}
+  .no-results{text-align:center;padding:40px 24px;color:var(--muted);font-size:.95rem;}
+  .no-results span{display:block;font-size:2rem;margin-bottom:12px;}
+  .spinner{display:inline-block;width:12px;height:12px;border:2px solid #ddd;border-top-color:var(--accent2);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .modal-loading{text-align:center;padding:40px;color:var(--muted);}
+</style>
+</head>
+<body>
+<header>
+  <h1>Fredagsquiz</h1>
+  <span class="week-badge" id="weekBadge">Vecka —</span>
+</header>
+<div class="mode-tabs">
+  <button class="mode-tab active" id="tabStudent" onclick="showMode('student')">Elev</button>
+  <button class="mode-tab" id="tabTeacher" onclick="showMode('teacher')">Lärare</button>
+</div>
+<div id="studentFlow">
+  <div id="enterScreen" class="screen active">
+    <div class="enter-wrap">
+      <h2>Veckans quiz</h2>
+      <p>Skriv in ditt kodord för att börja</p>
+      <div class="code-input-wrap">
+        <input type="text" id="codeInput" placeholder="Ditt kodord" maxlength="20" onkeydown="if(event.key==='Enter')startQuiz()">
+        <button class="btn" onclick="startQuiz()">Starta</button>
+      </div>
+      <div class="error-msg" id="codeError"></div>
+    </div>
+  </div>
+  <div id="quizScreen" class="screen">
+    <div class="quiz-wrap">
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="subject-label" id="qSubject"></div>
+      <div class="question-num" id="qNum"></div>
+      <div class="question-text" id="qText"></div>
+      <div id="qAnswerArea"></div>
+      <div class="feedback-box" id="feedbackBox"></div>
+      <div class="nav-row">
+        <button class="btn btn-outline" id="submitBtn" onclick="submitAnswer()">Svara</button>
+        <button class="btn" id="nextBtn" onclick="nextQuestion()" style="display:none">Nästa →</button>
+      </div>
+    </div>
+  </div>
+  <div id="doneScreen" class="screen">
+    <div class="done-wrap">
+      <h2 id="doneTitle">Bra jobbat!</h2>
+      <p class="subtitle">Ditt quiz är inlämnat.</p>
+      <div class="score-circle">
+        <span class="score-num" id="finalScore">—</span>
+        <span class="score-label">poäng</span>
+      </div>
+      <div class="review-list" id="reviewList"></div>
+    </div>
+  </div>
+</div>
+<div id="teacherFlow" style="display:none">
+  <div id="teacherPinScreen" class="screen active">
+    <div class="teacher-pin-wrap">
+      <h2>Lärarvy</h2>
+      <p>Ange lärarkoden för att se resultaten</p>
+      <div class="code-input-wrap">
+        <input type="password" id="teacherPinInput" placeholder="Lärarkod" onkeydown="if(event.key==='Enter')checkTeacherPin()">
+        <button class="btn" onclick="checkTeacherPin()">Logga in</button>
+      </div>
+      <div class="error-msg" id="pinError"></div>
+      <p style="margin-top:20px;font-size:.8rem;color:var(--muted)">(Demokod: <strong>LARARE</strong>)</p>
+    </div>
+  </div>
+  <div id="teacherDashScreen" class="screen">
+    <div class="teacher-wrap">
+      <h2>Lärarvy</h2>
+      <p class="t-subtitle" id="teacherSubtitle"></p>
+      <div class="insights-grid" id="insightsGrid"></div>
+      <div class="section-title">Alla inlämningar</div>
+      <div class="student-table" id="studentTable"></div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+const TEACHER_PIN="LARARE";
+const LEVEL_ORDER=['wrong','e','c','a'];
+const LEVEL_LABELS={a:"Välutvecklat",c:"Utvecklat",e:"Godkänt",wrong:"Hade fel"};
+const LEVEL_SCORES={a:1,c:0.67,e:0.33,wrong:0};
+let submissions=[],currentStudent=null,currentQ=0;
+let answers=[],selectedOption=null,tipShown=[],pendingOpenAnswer=null;
+
+function getWeekNumber(){
+  const d=new Date();d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+3-(d.getDay()+6)%7);
+  const w=new Date(d.getFullYear(),0,4);
+  return 1+Math.round(((d-w)/86400000-3+(w.getDay()+6)%7)/7);
+}
+const currentWeek=getWeekNumber();
+document.getElementById('weekBadge').textContent=`Vecka ${currentWeek}`;
+
+const quizData={
+  week:currentWeek,
+  questions:[
+    {id:1,subject:"Matematik",type:"multiple",
+      text:"Vad är 15% av 200?",
+      options:["20","25","30","35"],correct:2,
+      feedback_correct:"Rätt! 15% av 200 = 0,15 × 200 = 30.",
+      feedback_wrong:"Tänk om. 15% betyder 15 av 100. Hur många är det av 200?",
+      facit:"Svaret är 30. 15% = 15/100 = 0,15. Multiplicera: 0,15 × 200 = 30."},
+    {id:2,subject:"Svenska",type:"open",useLevels:true,
+      text:"Förklara skillnaden mellan en berättande och en förklarande text. Ge ett exempel på vardera.",
+      tip:"Tänk på syftet med texten. Vill den berätta en historia eller förklara hur något fungerar?",
+      kompletteraTip:"Försök lägga till varför de två texttyperna används i olika sammanhang, och välj ett mer specifikt exempel.",
+      levels:{
+        e:{example:"\"En berättande text berättar en historia, till exempel en bok. En förklarande text förklarar saker, till exempel ett faktablad.\""},
+        c:{example:"\"En berättande text har en handling och karaktärer som man följer, till exempel en roman. En förklarande text beskriver hur eller varför något fungerar, till exempel ett avsnitt i en lärobok om hur kroppen fungerar.\""},
+        a:{example:"\"Berättande texter vill engagera läsaren i en historia med karaktärer och händelser, som i en roman eller saga. Förklarande texter vill ge läsaren kunskap om hur eller varför något fungerar, som ett faktablad om rymden. Skillnaden handlar alltså om vad texten vill åstadkomma hos den som läser.\""}
+      },
+      aiRubric:"Bedöm elevsvaret: 'a'=tydlig förklaring av båda texttypers syfte plus träffsäkra exempel, 'c'=förklarar skillnaden och ger exempel men utan djupare analys, 'e'=nämner att de är olika och ger exempel men förklarar inte skillnaden, 'wrong'=missförstår eller svarar inte. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\"}"},
+    {id:3,subject:"NO",type:"multiple",
+      text:"Vilket av dessa är ett exempel på ett ekosystem?",
+      options:["En sten i skogen","En sjö med växter, djur och mikroorganismer","Solsystemet","En fotosyntesreaktion"],
+      correct:1,
+      feedback_correct:"Precis! Ett ekosystem är levande organismer och deras miljö som samverkar.",
+      feedback_wrong:"Ett ekosystem kräver levande organismer som samverkar med sin miljö.",
+      facit:"Rätt svar: en sjö med växter, djur och mikroorganismer."},
+    {id:4,subject:"Matematik",type:"open",useLevels:false,
+      text:"Lisa cyklar 3 km på 12 minuter. Hur lång tid tar det henne att cykla 10 km? Visa hur du tänker.",
+      tip:"Börja med att räkna ut hur lång tid det tar per kilometer.",
+      facit:"3 km på 12 min → 1 km tar 4 min. 10 km × 4 min = 40 minuter."},
+    {id:5,subject:"Svenska",type:"multiple",
+      text:"Vilket ord är ett substantiv?",
+      options:["Snabbt","Springa","Träd","Grön"],correct:2,
+      feedback_correct:"Rätt! Träd är ett substantiv eftersom det betecknar ett ting.",
+      feedback_wrong:"Substantiv betecknar personer, platser, ting eller fenomen. Vilket ord gör det?",
+      facit:"Rätt svar: Träd. Snabbt = adverb, Springa = verb, Grön = adjektiv."}
+  ]
+};
+
+function showMode(mode){
+  document.getElementById('tabStudent').classList.toggle('active',mode==='student');
+  document.getElementById('tabTeacher').classList.toggle('active',mode==='teacher');
+  document.getElementById('studentFlow').style.display=mode==='student'?'':'none';
+  document.getElementById('teacherFlow').style.display=mode==='teacher'?'':'none';
+  if(mode==='teacher')showTeacherScreen('teacherPinScreen');
+}
+function showScreen(id){document.querySelectorAll('#studentFlow .screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function showTeacherScreen(id){document.querySelectorAll('#teacherFlow .screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+function startQuiz(){
+  const code=document.getElementById('codeInput').value.trim().toUpperCase();
+  if(!code){document.getElementById('codeError').textContent='Ange ditt kodord.';return;}
+  document.getElementById('codeError').textContent='';
+  currentStudent=code;currentQ=0;answers=[];selectedOption=null;pendingOpenAnswer=null;
+  tipShown=quizData.questions.map(()=>false);
+  showScreen('quizScreen');renderQuestion();
+}
+
+function renderQuestion(){
+  const q=quizData.questions[currentQ];
+  const total=quizData.questions.length;
+  document.getElementById('progressBar').style.width=`${(currentQ/total)*100}%`;
+  document.getElementById('qSubject').textContent=q.subject;
+  document.getElementById('qNum').textContent=`Fråga ${currentQ+1} av ${total}`;
+  document.getElementById('qText').textContent=q.text;
+  const fb=document.getElementById('feedbackBox');fb.className='feedback-box';fb.innerHTML='';
+  document.getElementById('submitBtn').style.display='';document.getElementById('submitBtn').disabled=false;
+  document.getElementById('nextBtn').style.display='none';
+  selectedOption=null;pendingOpenAnswer=null;selfAssessLocked=false;
+  const area=document.getElementById('qAnswerArea');
+  if(q.type==='multiple'){
+    area.innerHTML=`<div class="options-list">${q.options.map((o,i)=>
+      `<button class="option-btn" id="opt${i}" onclick="selectOption(${i})">
+        <span class="option-letter">${String.fromCharCode(65+i)}</span><span>${o}</span>
+      </button>`).join('')}</div>`;
+  }else{
+    area.innerHTML=`<div class="open-answer-area">
+      <div class="tip-row">${q.tip?`<button class="btn btn-sm btn-tip" id="tipBtn" onclick="showTip()">💡 Be om ett tips</button>
+        <div id="tipBox" style="display:none" class="tip-box"><strong>Tips</strong><span id="tipText"></span></div>`:''}
+      </div>
+      <textarea id="openAnswer" placeholder="Skriv ditt svar här..."></textarea>
+    </div>`;
+  }
+}
+
+function showTip(){
+  const q=quizData.questions[currentQ];tipShown[currentQ]=true;
+  document.getElementById('tipBtn').style.display='none';
+  document.getElementById('tipText').textContent=q.tip;
+  document.getElementById('tipBox').style.display='block';
+}
+function selectOption(i){
+  selectedOption=i;
+  document.querySelectorAll('.option-btn').forEach((b,idx)=>b.classList.toggle('selected',idx===i));
+}
+function buildLevelFacit(q){
+  return `<div class="level-facit">
+    <div class="level-intro">Så här kan svar på olika nivåer se ut:</div>
+    <div class="level-row e-row"><div class="level-example">${q.levels.e.example}</div></div>
+    <div class="level-row c-row"><div class="level-example">${q.levels.c.example}</div></div>
+    <div class="level-row a-row"><div class="level-example">${q.levels.a.example}</div></div>
+  </div>`;
+}
+function submitAnswer(){
+  const q=quizData.questions[currentQ];
+  const submitBtn=document.getElementById('submitBtn');
+  if(q.type==='multiple'){
+    if(selectedOption===null)return;
+    const isCorrect=selectedOption===q.correct;
+    document.querySelectorAll('.option-btn').forEach((b,idx)=>{
+      b.onclick=null;
+      if(idx===q.correct)b.classList.add('correct');
+      else if(idx===selectedOption&&!isCorrect)b.classList.add('wrong');
+    });
+    const fb=document.getElementById('feedbackBox');
+    fb.className=`feedback-box show ${isCorrect?'correct-fb':'wrong-fb'}`;
+    fb.innerHTML=`<strong>${isCorrect?'✓ Rätt!':'✗ Inte riktigt'}</strong>${isCorrect?q.feedback_correct:q.feedback_wrong}`;
+    document.getElementById('qAnswerArea').innerHTML+=`<div class="facit-box"><div class="facit-label">Facit</div><div class="facit-text">${q.facit}</div></div>`;
+    answers.push({qId:q.id,type:'multiple',answer:q.options[selectedOption],correct:isCorrect,score:isCorrect?1:0,usedTip:false,aiLevel:null,aiReason:null,aiDone:true});
+    selectedOption=null;submitBtn.style.display='none';
+    document.getElementById('nextBtn').style.display='';
+    document.getElementById('nextBtn').textContent=currentQ<quizData.questions.length-1?'Nästa →':'Se resultat';
+  }else{
+    const text=document.getElementById('openAnswer')?.value.trim();
+    if(!text)return;
+    if(pendingOpenAnswer)return;
+    pendingOpenAnswer=text;
+    document.getElementById('openAnswer').disabled=true;
+    submitBtn.style.display='none';
+    const tipBtn=document.getElementById('tipBtn');if(tipBtn)tipBtn.style.display='none';
+    const area=document.getElementById('qAnswerArea');
+    if(q.useLevels){
+      area.innerHTML+=buildLevelFacit(q);
+      if(q.kompletteraTip)area.innerHTML+=`<div class="komplettera-tip"><div class="kt-label">Tips för att utveckla svaret</div><div class="kt-text">${q.kompletteraTip}</div></div>`;
+      area.innerHTML+=`<div class="self-assess" id="selfAssess">
+        <p>Vilket exempel liknar ditt svar mest?</p>
+        <div class="self-assess-btns">
+          <button class="sa-btn" onclick="setSelfAssess('a',this)">Välutvecklat</button>
+          <button class="sa-btn" onclick="setSelfAssess('c',this)">Utvecklat</button>
+          <button class="sa-btn" onclick="setSelfAssess('e',this)">Godkänt</button>
+          <button class="sa-btn" onclick="setSelfAssess('wrong',this)">Hade fel</button>
+        </div>
+      </div>`;
+    }else{
+      area.innerHTML+=`<div class="facit-box"><div class="facit-label">Facit</div><div class="facit-text">${q.facit}</div></div>`;
+      area.innerHTML+=`<div class="self-assess" id="selfAssess">
+        <p>Hur stämde ditt svar?</p>
+        <div class="self-assess-btns">
+          <button class="sa-btn" onclick="setSelfAssessSimple(1,'right',this)">✓ Hade rätt</button>
+          <button class="sa-btn" onclick="setSelfAssessSimple(0.5,'partial',this)">~ Delvis rätt</button>
+          <button class="sa-btn" onclick="setSelfAssessSimple(0,'wrong',this)">✗ Hade fel</button>
+        </div>
+      </div>`;
+    }
+  }
+}
+
+let selfAssessLocked=false;
+async function setSelfAssess(level,btn){
+  if(selfAssessLocked)return;
+  const q=quizData.questions[currentQ];
+  const existing=answers.findIndex(a=>a.qId===q.id&&a.type==='open');
+  if(existing>-1)answers.splice(existing,1);
+  document.querySelectorAll('.sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
+  btn.classList.add(`sel-${level}`);
+  const aObj={qId:q.id,type:'open',answer:pendingOpenAnswer,score:LEVEL_SCORES[level],selfAssess:level,
+    usedTip:tipShown[currentQ],komplettering:null,kompletteringDeclined:false,aiLevel:null,aiReason:null,aiDone:false};
+  answers.push(aObj);
+  if(q.aiRubric){
+    aObj._aiPromise=gradeWithAI(q,pendingOpenAnswer).then(r=>{aObj.aiLevel=r.level;aObj.aiReason=r.reason;aObj.aiDone=true;});
+  }else{aObj.aiDone=true;}
+  selfAssessLocked=true;
+  setTimeout(()=>{
+    if(document.getElementById('kompletteraOffer'))return;
+    document.getElementById('qAnswerArea').innerHTML+=`
+      <div class="komplettera-offer" id="kompletteraOffer">
+        <p>Vill du försöka komplettera ditt svar?</p>
+        <div class="offer-btns">
+          <button class="btn btn-sm btn-yes" onclick="visaKompletteraFalt(${q.id})">Ja, jag provar</button>
+          <button class="btn btn-sm btn-no" onclick="neka(${q.id})">Nej tack</button>
+        </div>
+      </div>`;
+  },350);
+}
+
+function setSelfAssessSimple(score,type,btn){
+  const q=quizData.questions[currentQ];
+  document.querySelectorAll('.sa-btn').forEach(b=>b.onclick=null);
+  const cls={right:'sel-a',partial:'sel-c',wrong:'sel-wrong'};
+  btn.classList.add(cls[type]||'sel-wrong');
+  answers.push({qId:q.id,type:'open',answer:pendingOpenAnswer,score,selfAssess:type,
+    usedTip:tipShown[currentQ],komplettering:null,kompletteringDeclined:false,aiLevel:null,aiReason:null,aiDone:true});
+  setTimeout(()=>{
+    document.getElementById('nextBtn').style.display='';
+    document.getElementById('nextBtn').textContent=currentQ<quizData.questions.length-1?'Nästa →':'Se resultat';
+  },350);
+}
+
+async function gradeWithAI(q,studentAnswer){
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",max_tokens:200,
+        system:"Du gör en hemlig bedömning av ett elevsvar. Svara BARA med JSON utan markdown.",
+        messages:[{role:"user",content:`${q.aiRubric}\n\nFråga: ${q.text}\nElevens svar: ${studentAnswer}`}]
+      })
+    });
+    const data=await res.json();
+    const raw=data.content.find(b=>b.type==='text')?.text||'{}';
+    return JSON.parse(raw.replace(/```json|```/g,'').trim());
+  }catch{return{level:null,reason:null};}
+}
+
+function visaKompletteraFalt(qId){
+  document.getElementById('kompletteraOffer').remove();
+  document.getElementById('qAnswerArea').innerHTML+=`
+    <div class="komplettera-form" id="kompletteraForm">
+      <div class="kf-label">Komplettering</div>
+      <textarea id="kompletteraText" placeholder="Skriv ett förbättrat svar här..." style="min-height:80px"></textarea>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-sm" onclick="sparaKomplettering(${qId})">Skicka</button>
+      </div>
+    </div>`;
+}
+function sparaKomplettering(qId){
+  const text=document.getElementById('kompletteraText')?.value.trim();
+  if(!text)return;
+  const aIdx=answers.findIndex(a=>a.qId===qId&&a.type==='open');
+  if(aIdx>-1)answers[aIdx].komplettering=text;
+  document.getElementById('kompletteraForm').remove();
+  document.getElementById('qAnswerArea').innerHTML+=`<div class="komplettera-done">✓ Komplettering sparad!</div>`;
+  setTimeout(()=>{
+    document.getElementById('nextBtn').style.display='';
+    document.getElementById('nextBtn').textContent=currentQ<quizData.questions.length-1?'Nästa →':'Se resultat';
+  },300);
+}
+function neka(qId){
+  const aIdx=answers.findIndex(a=>a.qId===qId&&a.type==='open');
+  if(aIdx>-1)answers[aIdx].kompletteringDeclined=true;
+  document.getElementById('kompletteraOffer').remove();
+  document.getElementById('nextBtn').style.display='';
+  document.getElementById('nextBtn').textContent=currentQ<quizData.questions.length-1?'Nästa →':'Se resultat';
+}
+function nextQuestion(){
+  currentQ++;
+  if(currentQ>=quizData.questions.length)finishQuiz();
+  else{selectedOption=null;pendingOpenAnswer=null;renderQuestion();}
+}
+function finishQuiz(){
+  const total=quizData.questions.length;
+  const rawScore=answers.reduce((s,a)=>s+a.score,0);
+  const pct=Math.round((rawScore/total)*100);
+  submissions.push({student:currentStudent,week:currentWeek,score:pct,rawScore,total,answers:[...answers],
+    timestamp:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})});
+  document.getElementById('finalScore').textContent=`${pct}%`;
+  document.getElementById('doneTitle').textContent=pct===100?'🏆 Perfekt!':pct>=70?'Bra jobbat! 🎉':'Klart!';
+  document.getElementById('progressBar').style.width='100%';
+  document.getElementById('reviewList').innerHTML=answers.map(a=>{
+    const q=quizData.questions.find(q=>q.id===a.qId);
+    const cls=a.score>=0.9?'correct-card':a.score>0?'partial-card':'wrong-card';
+    const sl=a.score>=0.9?'✓ Rätt':a.score>0?'Delvis':'✗ Fel';
+    return `<div class="review-card ${cls}">
+      <div class="review-subject">${q.subject} · ${sl}</div>
+      <div class="review-q">${q.text}</div>
+      <div class="review-answer">Ditt svar: <span>${a.answer}</span></div>
+      ${a.komplettering?`<div class="review-komplettering"><strong>Din komplettering</strong>${a.komplettering}</div>`:''}
+    </div>`;
+  }).join('');
+  showScreen('doneScreen');
+}
+
+function checkTeacherPin(){
+  const pin=document.getElementById('teacherPinInput').value.trim().toUpperCase();
+  if(pin===TEACHER_PIN){document.getElementById('pinError').textContent='';showTeacherScreen('teacherDashScreen');renderTeacherDash();}
+  else document.getElementById('pinError').textContent='Fel kod, försök igen.';
+}
+
+// Returnerar null, 'over1', 'over2', 'under1', 'under2'
+function mismatchDir(a){
+  if(!a.aiLevel||!a.selfAssess)return null;
+  const selfKey=a.selfAssess==='right'?'a':a.selfAssess==='partial'?'c':a.selfAssess==='wrong'?'wrong':a.selfAssess;
+  const ai=LEVEL_ORDER.indexOf(a.aiLevel);
+  const self=LEVEL_ORDER.indexOf(selfKey);
+  if(ai<0||self<0)return null;
+  const diff=self-ai;
+  if(diff>=2)return'over2';
+  if(diff===1)return'over1';
+  if(diff<=-2)return'under2';
+  if(diff===-1)return'under1';
+  return null;
+}
+
+function renderTeacherDash(){
+  const n=submissions.length;
+  document.getElementById('teacherSubtitle').textContent=`Vecka ${currentWeek} · ${n} inlämning${n!==1?'ar':''}`;
+  const avgScore=n?Math.round(submissions.reduce((s,r)=>s+r.score,0)/n):0;
+  const kompCount=n?submissions.reduce((s,sub)=>s+sub.answers.filter(a=>a.komplettering).length,0):0;
+  const mismatchCount=n?submissions.reduce((s,sub)=>s+sub.answers.filter(a=>mismatchDir(a)).length,0):0;
+  document.getElementById('insightsGrid').innerHTML=`
+    <div class="insight-card"><div class="card-label">Inlämnat</div><div class="card-value">${n}</div><div class="card-sub">elever</div></div>
+    <div class="insight-card"><div class="card-label">Snittscore</div><div class="card-value">${n?avgScore+'%':'—'}</div><div class="card-sub">av klassen</div></div>
+    <div class="insight-card"><div class="card-label">Självbed. avviker</div><div class="card-value">${mismatchCount}</div><div class="card-sub">fall totalt</div></div>`;
+  const tableEl=document.getElementById('studentTable');
+  if(!n){tableEl.innerHTML=`<div class="no-results" style="padding:40px"><span>📋</span>Inga inlämningar än.</div>`;return;}
+  tableEl.innerHTML=`<table><thead><tr><th>Kodord</th><th>Tid</th><th>Score</th><th>Flaggor</th><th></th></tr></thead>
+    <tbody>${submissions.map((s,i)=>{
+      const cls=s.score>=70?'score-high':s.score>=40?'score-mid':'score-low';
+      const chips=[];
+      s.answers.forEach(a=>{
+        const q=quizData.questions.find(q=>q.id===a.qId);
+        if(a.usedTip)chips.push(`<span class="flag-chip chip-tip">💡 tips</span>`);
+        if(a.komplettering)chips.push(`<span class="flag-chip chip-komp">✏ kompletterade</span>`);
+        if(a.kompletteringDeclined)chips.push(`<span class="flag-chip chip-declined">tackade nej</span>`);
+        const dir=mismatchDir(a);
+        if(dir==='over2')chips.push(`<span class="flag-chip chip-over2">🔴 stor överskattning ${q?.subject||''}</span>`);
+        if(dir==='over1')chips.push(`<span class="flag-chip chip-over1">🟡 överskattning ${q?.subject||''}</span>`);
+        if(dir==='under2')chips.push(`<span class="flag-chip chip-under2">🔵 stor underskattning ${q?.subject||''}</span>`);
+        if(dir==='under1')chips.push(`<span class="flag-chip chip-under1">○ underskattning ${q?.subject||''}</span>`);
+      });
+      return `<tr class="clickable" onclick="openStudentModal(${i})">
+        <td><strong>${s.student}</strong></td>
+        <td style="color:var(--muted);font-size:.85rem">${s.timestamp}</td>
+        <td><span class="score-pill ${cls}">${s.score}%</span></td>
+        <td>${chips.length?chips.join(''):'<span style="color:var(--muted);font-size:.82rem">inga</span>'}</td>
+        <td style="color:var(--muted);font-size:.8rem;white-space:nowrap">Visa →</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+async function openStudentModal(idx){
+  const sub=submissions[idx];
+  document.getElementById('modalContent').innerHTML=`<div class="modal-loading"><span class="spinner"></span> Hämtar bedömning...</div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+  const liveAnswers=answers.filter(a=>a._aiPromise);
+  const timeout=new Promise(resolve=>setTimeout(resolve,10000));
+  await Promise.race([Promise.all(liveAnswers.map(a=>a._aiPromise)),timeout]);
+  sub.answers.forEach(sa=>{
+    const live=answers.find(a=>a.qId===sa.qId&&a.type===sa.type);
+    if(live){sa.aiLevel=live.aiLevel??null;sa.aiReason=live.aiReason??null;sa.aiDone=live.aiDone;}
+  });
+  const rows=sub.answers.map(a=>{
+    const q=quizData.questions.find(q=>q.id===a.qId);
+    const scoreLabel=a.score>=0.9?'✓ Rätt':a.score>0?'Delvis':'✗ Fel';
+    const color=a.score>=0.9?'var(--green)':a.score>0?'#e08020':'var(--red)';
+    let flagHtml='';
+    if(a.type==='open'&&q.useLevels){
+      const selfKey=a.selfAssess==='right'?'a':a.selfAssess==='partial'?'c':a.selfAssess==='wrong'?'wrong':a.selfAssess;
+      const selfLabel=LEVEL_LABELS[selfKey]||selfKey;
+      const aiLabel=a.aiLevel?LEVEL_LABELS[a.aiLevel]:'okänd';
+      const dir=mismatchDir(a);
+      if(dir==='over2'||dir==='over1'){
+        const serious=dir==='over2';
+        flagHtml+=`<div class="mq-flag ${serious?'flag-mismatch2':'flag-mismatch1'}">
+          ${serious?'⚡⚡':'⚡'} Eleven bedömde sig som <strong>${selfLabel}</strong>, AI bedömde <strong>${aiLabel}</strong>. ${serious?'Tydlig överskattning.':'Möjlig överskattning.'}
+          ${a.aiReason?`<br><span style="font-size:.8rem;opacity:.75">${a.aiReason}</span>`:''}
+        </div>`;
+      }else if(dir==='under2'||dir==='under1'){
+        const serious=dir==='under2';
+        flagHtml+=`<div class="mq-flag ${serious?'flag-under2':'flag-under1'}">
+          ${serious?'🔻🔻':'🔻'} Eleven bedömde sig som <strong>${selfLabel}</strong>, AI bedömde <strong>${aiLabel}</strong>. ${serious?'Tydlig underskattning.':'Möjlig underskattning.'}
+          ${a.aiReason?`<br><span style="font-size:.8rem;opacity:.75">${a.aiReason}</span>`:''}
+        </div>`;
+      }else if(a.aiLevel){
+        flagHtml+=`<div class="mq-flag flag-ok">✓ Självbedömning stämmer (${selfLabel})</div>`;
+      }else{
+        flagHtml+=`<div class="mq-flag" style="background:var(--soft);border-left:3px solid #ccc;color:var(--muted)">AI-bedömning ej tillgänglig. Eleven valde: ${selfLabel}.</div>`;
+      }
+    }
+    let kompHtml='';
+    if(a.komplettering)kompHtml=`<div class="mq-komp"><div class="mq-komp-label">Komplettering</div>${a.komplettering}</div>`;
+    else if(a.kompletteringDeclined)kompHtml=`<div class="mq-no-komp">Tackade nej till komplettering</div>`;
+    const dir=mismatchDir(a);
+    const mqClass=dir==='over2'?'mq-warn2':dir==='over1'?'mq-warn1':a.komplettering?'mq-info':'';
+    return `<div class="mq ${mqClass}">
+      <div class="mq-subject">${q.subject} · <span style="color:${color};font-weight:600">${scoreLabel}</span>${a.usedTip?' · <span style="color:#b07a00;font-size:.8rem">💡 använde tips</span>':''}</div>
+      <div class="mq-qtext">${q.text}</div>
+      <div class="mq-answer">${a.answer}</div>
+      ${flagHtml}${kompHtml}
+    </div>`;
+  }).join('');
+  document.getElementById('modalContent').innerHTML=`
+    <h3>${sub.student}</h3>
+    <div class="modal-meta">Vecka ${sub.week} · ${sub.timestamp} · Score: ${sub.score}%</div>
+    ${rows}
+    <button class="btn btn-outline btn-sm" style="margin-top:20px" onclick="closeModal()">Stäng</button>`;
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+</script>
+</body>
+</html>
