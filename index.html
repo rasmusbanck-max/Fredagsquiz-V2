@@ -356,7 +356,7 @@ const quizData={week:currentWeek,questions:[
       c:{example:"\"En berättande text har en handling och karaktärer som man följer, till exempel en roman. En förklarande text beskriver hur eller varför något fungerar, till exempel ett avsnitt i en lärobok om hur kroppen fungerar.\""},
       a:{example:"\"Berättande texter vill engagera läsaren i en historia med karaktärer och händelser, som i en roman eller saga. Förklarande texter vill ge läsaren kunskap om hur eller varför något fungerar, som ett faktablad om rymden. Skillnaden handlar alltså om vad texten vill åstadkomma hos den som läser.\""}
     },
-    aiRubric:"Bedöm elevsvaret: 'a'=tydlig förklaring av båda texttypers syfte plus träffsäkra exempel, 'c'=förklarar skillnaden och ger exempel men utan djupare analys, 'e'=nämner att de är olika och ger exempel men förklarar inte skillnaden, 'wrong'=missförstår eller svarar inte. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\"}"},
+    aiRubric:"Bedöm elevsvaret på frågan om berättande och förklarande text. VIKTIGT: Exempel måste vara faktiska skriftliga texttyper (bok, roman, faktablad, recept, instruktion, artikel etc). Muntliga situationer som 'läraren förklarar' eller 'när någon berättar' är INTE exempel på texttyper och ska ge lägre bedömning. 'a'=tydlig förklaring av båda texttypers syfte plus träffsäkra skriftliga exempel, 'c'=förklarar skillnaden och ger skriftliga exempel men utan djupare analys, 'e'=nämner att de är olika men exemplen är svaga, felaktiga eller saknas, 'wrong'=missförstår helt eller svarar inte. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\"}"},
   {id:3,subject:"NO",type:"multiple",
     text:"Vilket av dessa är ett exempel på ett ekosystem?",
     options:["En sten i skogen","En sjö med växter, djur och mikroorganismer","Solsystemet","En fotosyntesreaktion"],
@@ -368,7 +368,7 @@ const quizData={week:currentWeek,questions:[
     text:"Lisa cyklar 3 km på 12 minuter. Hur lång tid tar det henne att cykla 10 km? Visa hur du tänker.",
     tip:"Börja med att räkna ut hur lång tid det tar per kilometer.",
     facit:"3 km på 12 min → 1 km tar 4 min. 10 km × 4 min = 40 minuter.",
-    aiRubric:"Rätt svar är 40 minuter. Bedöm elevsvaret: 'a'=rätt svar med tydligt resonemang, 'c'=rätt svar men utan tydligt resonemang eller med räknesteg som saknas, 'e'=delvis rätt men fel svar eller metod, 'wrong'=fel svar eller inget försök. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\"}"},
+    aiRubric:"Rätt svar är 40 minuter. Bedöm elevsvaret strängt: 'a'=rätt svar (40 min) med tydligt räknesätt eller resonemang, 'c'=rätt svar men utan resonemang, 'e'=fel svar men visar relevant matematiskt tänkande, 'wrong'=fel svar utan räknesätt, nonsens-svar, svar som inte är numeriska, eller svar som inte försöker lösa uppgiften. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\"}"},
   {id:5,subject:"Svenska",type:"multiple",
     text:"Vilket ord är ett substantiv?",
     options:["Snabbt","Springa","Träd","Grön"],correct:2,
@@ -702,7 +702,28 @@ function sparaKomplettering(qId){
   const text=document.getElementById('kompletteraText')?.value.trim();
   if(!text)return;
   const aIdx=answers.findIndex(a=>a.qId===qId&&a.type==='open');
-  if(aIdx>-1)answers[aIdx].komplettering=text;
+  if(aIdx>-1){
+    answers[aIdx].komplettering=text;
+    const a=answers[aIdx];
+    const q=quizData.questions.find(q=>q.id===qId);
+    if(q?.aiRubric){
+      // Spara ursprungsbedömningen innan vi skriver över
+      a.aiLevelOrig=a.aiLevel;
+      a.aiReasonOrig=a.aiReason;
+      const fullAnswer=`${a.answer}\n\nElevens komplettering: ${text}`;
+      a.aiDone=false;
+      a._aiPromise=gradeWithAI(q,fullAnswer).then(r=>{
+        a.aiLevel=r.level;a.aiReason=r.reason;a.aiDone=true;
+        const nextBtn=document.getElementById('nextBtn');
+        if(nextBtn&&nextBtn.dataset.waiting==='ai'){
+          nextBtn.disabled=false;
+          nextBtn.innerHTML='Se resultat';
+          nextBtn.dataset.waiting='';
+          nextBtn.style.opacity='';
+        }
+      });
+    }
+  }
   document.getElementById('kompletteraForm').remove();
   document.getElementById('qAnswerArea').innerHTML+=`<div class="komplettera-done">✓ Komplettering sparad!</div>`;
   visaNextEllerVanta();
@@ -770,26 +791,46 @@ async function finishQuiz(){
       const cls=a.score>=0.9?'correct-card':a.score>0?'partial-card':'wrong-card';
       const sl=a.score>=0.9?'✓ Rätt':a.score>0?'Delvis':'✗ Fel';
       let aiHtml='';
-      if(a.type==='open'&&q.useLevels){
+
+      if(a.type==='open'&&q.aiRubric){
         if(a.aiLevel){
           const aiLabel={a:'Välutvecklat',c:'Utvecklat',e:'Godkänt',wrong:'Hade fel'}[a.aiLevel]||a.aiLevel;
-          const selfLabel={a:'Välutvecklat',c:'Utvecklat',e:'Godkänt',wrong:'Hade fel',right:'Rätt',partial:'Delvis rätt'}[a.selfAssess]||a.selfAssess;
-          const selfIdx=LEVEL_ORDER.indexOf(a.selfAssess==='right'?'a':a.selfAssess==='partial'?'c':a.selfAssess==='wrong'?'wrong':a.selfAssess);
-          const aiIdx=LEVEL_ORDER.indexOf(a.aiLevel);
-          const diff=selfIdx-aiIdx;
-          let feedbackCls='',feedbackIcon='';
-          if(diff>=2){feedbackCls='wrong-fb';feedbackIcon='⚠️';}
-          else if(diff===1){feedbackCls='';feedbackIcon='💡';}
-          else if(diff<=-1){feedbackCls='';feedbackIcon='💪';}
-          else{feedbackCls='correct-fb';feedbackIcon='✓';}
-          aiHtml=`<div class="review-ai ${feedbackCls}" style="margin-top:8px;padding:10px 14px;border-radius:8px;background:${diff>=2?'#fdf0f0':diff<=-1?'#e8f0ff':'#f5f5f0'};font-size:.85rem;line-height:1.5;">
-            <strong style="display:block;margin-bottom:2px;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7">${feedbackIcon} AI-bedömning</strong>
-            Du valde <strong>${selfLabel}</strong> · AI bedömde <strong>${aiLabel}</strong>${a.aiReason?`<br><span style="opacity:.75">${a.aiReason}</span>`:''}
-          </div>`;
+
+          if(q.useLevels){
+            // Nivåfrågor: jämför självbedömningsnivå med AI-nivå
+            const selfLabel={a:'Välutvecklat',c:'Utvecklat',e:'Godkänt',wrong:'Hade fel'}[a.selfAssess]||a.selfAssess;
+            const selfIdx=LEVEL_ORDER.indexOf(a.selfAssess==='right'?'a':a.selfAssess==='partial'?'c':a.selfAssess==='wrong'?'wrong':a.selfAssess);
+            const aiIdx=LEVEL_ORDER.indexOf(a.aiLevel);
+            const diff=selfIdx-aiIdx;
+            let bg='#f5f5f0',icon='✓',msg=`Du valde <strong>${selfLabel}</strong> · AI bedömde <strong>${aiLabel}</strong>`;
+            if(diff>=2){bg='#fdf0f0';icon='⚠️';}
+            else if(diff===1){bg='#fff9e8';icon='💡';}
+            else if(diff<=-1){bg='#e8f0ff';icon='💪';}
+            aiHtml=`<div style="margin-top:8px;padding:10px 14px;border-radius:8px;background:${bg};font-size:.85rem;line-height:1.5;">
+              <strong style="display:block;margin-bottom:2px;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7">${icon} AI-bedömning</strong>
+              ${msg}${a.aiReason?`<br><span style="opacity:.75">${a.aiReason}</span>`:''}
+            </div>`;
+          }else{
+            // Enkel självbedömning: jämför rätt/delvis/fel med AI-nivå
+            const selfScore=a.selfAssess==='right'?1:a.selfAssess==='partial'?0.5:0;
+            const aiScore={a:1,c:0.67,e:0.33,wrong:0}[a.aiLevel]??0;
+            const selfLabel={right:'Rätt',partial:'Delvis rätt',wrong:'Fel'}[a.selfAssess]||a.selfAssess;
+            const overskattat=selfScore>aiScore+0.2;
+            const underskattat=selfScore<aiScore-0.2;
+            let bg='#f5f5f0',icon='✓',extra='';
+            if(overskattat){bg='#fdf0f0';icon='⚠️';extra='Du verkar ha överskattat ditt svar.';}
+            else if(underskattat){bg='#e8f0ff';icon='💪';extra='Du verkar ha underskattat ditt svar.';}
+            aiHtml=`<div style="margin-top:8px;padding:10px 14px;border-radius:8px;background:${bg};font-size:.85rem;line-height:1.5;">
+              <strong style="display:block;margin-bottom:2px;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7">${icon} AI-bedömning</strong>
+              Du markerade <strong>${selfLabel}</strong> · AI bedömde <strong>${aiLabel}</strong>${extra?`<br><span style="opacity:.75">${extra}</span>`:''}
+              ${a.aiReason?`<br><span style="opacity:.75">${a.aiReason}</span>`:''}
+            </div>`;
+          }
         }else{
           aiHtml=`<div id="ai-pending-${a.qId}" style="margin-top:8px;padding:8px 14px;border-radius:8px;background:var(--soft);font-size:.82rem;color:var(--muted)"><span class="spinner"></span> Hämtar AI-bedömning...</div>`;
         }
       }
+
       return `<div class="review-card ${cls}" id="review-card-${a.qId}">
         <div class="review-subject">${q.subject} · ${sl}</div>
         <div class="review-q">${q.text}</div>
@@ -985,7 +1026,13 @@ async function openStudentModal(idx){
   await Promise.race([Promise.all(liveAnswers.map(a=>a._aiPromise)),new Promise(r=>setTimeout(r,10000))]);
   sub.answers.forEach(sa=>{
     const live=answers.find(a=>a.qId===sa.qId&&a.type===sa.type);
-    if(live){sa.aiLevel=live.aiLevel??null;sa.aiReason=live.aiReason??null;sa.aiDone=live.aiDone;}
+    if(live){
+      sa.aiLevel=live.aiLevel??null;
+      sa.aiReason=live.aiReason??null;
+      sa.aiDone=live.aiDone;
+      sa.aiLevelOrig=live.aiLevelOrig??null;
+      sa.aiReasonOrig=live.aiReasonOrig??null;
+    }
   });
   const rows=(sub.answers||[]).map(a=>{
     const q=quizData.questions.find(q=>q.id===a.qId);if(!q)return'';
@@ -1016,8 +1063,23 @@ async function openStudentModal(idx){
       }
     }
     let kompHtml='';
-    if(a.komplettering)kompHtml=`<div class="mq-komp"><div class="mq-komp-label">Komplettering</div>${a.komplettering}</div>`;
-    else if(a.kompletteringDeclined)kompHtml=`<div class="mq-no-komp">Tackade nej till komplettering</div>`;
+    if(a.komplettering){
+      const origLabel=a.aiLevelOrig?LEVEL_LABELS[a.aiLevelOrig]:'okänd';
+      const efterLabel=a.aiLevel?LEVEL_LABELS[a.aiLevel]:'okänd';
+      const forbattring=a.aiLevelOrig&&a.aiLevel&&LEVEL_ORDER.indexOf(a.aiLevel)>LEVEL_ORDER.indexOf(a.aiLevelOrig);
+      const forsamring=a.aiLevelOrig&&a.aiLevel&&LEVEL_ORDER.indexOf(a.aiLevel)<LEVEL_ORDER.indexOf(a.aiLevelOrig);
+      kompHtml=`<div class="mq-komp">
+        <div class="mq-komp-label">Komplettering</div>
+        ${a.komplettering}
+        ${a.aiLevelOrig?`<div style="margin-top:8px;padding:8px 12px;border-radius:6px;background:white;font-size:.82rem;line-height:1.5;">
+          <span style="opacity:.6">Före:</span> <strong>${origLabel}</strong>${a.aiReasonOrig?` · ${a.aiReasonOrig}`:''}
+          <br><span style="opacity:.6">Efter:</span> <strong>${efterLabel}</strong>${a.aiReason?` · ${a.aiReason}`:''}
+          ${forbattring?'<br><span style="color:var(--green);font-weight:600">✓ Förbättrades</span>':forsamring?'<br><span style="color:var(--red);font-weight:600">↓ Försämrades</span>':'<br><span style="color:var(--muted)">Ingen förändring</span>'}
+        </div>`:''}
+      </div>`;
+    }else if(a.kompletteringDeclined){
+      kompHtml=`<div class="mq-no-komp">Tackade nej till komplettering</div>`;
+    }
     const dir=mismatchDir(a);
     const mqClass=dir==='over2'?'mq-warn2':dir==='over1'?'mq-warn1':a.komplettering?'mq-info':'';
     return `<div class="mq ${mqClass}">
