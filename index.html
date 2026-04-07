@@ -36,8 +36,14 @@
   .btn-no{background:transparent;border:2px solid #ccc;color:var(--muted);}.btn-no:hover{border-color:var(--ink);color:var(--ink);}
   .error-msg{color:var(--red);font-size:.85rem;margin-top:10px;min-height:20px;}
   .quiz-wrap{max-width:680px;margin:0 auto;padding:40px 24px 80px;}
-  .progress-bar-wrap{height:4px;background:var(--soft);border-radius:4px;margin-bottom:40px;overflow:hidden;}
+  .progress-bar-wrap{height:4px;background:var(--soft);border-radius:4px;margin-bottom:16px;overflow:hidden;}
   .progress-bar{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease;}
+  .question-nav{display:flex;gap:6px;margin-bottom:28px;flex-wrap:wrap;}
+  .qnav-btn{width:32px;height:32px;border-radius:50%;border:2px solid #ddd;background:white;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--muted);}
+  .qnav-btn.answered{border-color:var(--green);background:#e6f7f1;color:var(--green);}
+  .qnav-btn.current{border-color:var(--accent2);background:var(--accent2);color:white;}
+  .qnav-btn.locked{opacity:.4;cursor:default;}
+  .qnav-btn:hover:not(.current):not(.locked){border-color:var(--ink);color:var(--ink);}
   .subject-label{font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
   .question-num{font-size:.85rem;color:var(--muted);margin-bottom:6px;}
   .question-text{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;line-height:1.3;margin-bottom:24px;}
@@ -89,13 +95,46 @@
   .feedback-box.correct-fb{background:#e6f7f1;border-left:4px solid var(--green);}
   .feedback-box.wrong-fb{background:#fdf0f0;border-left:4px solid var(--red);}
   .feedback-box strong{display:block;margin-bottom:4px;}
-  .nav-row{display:flex;justify-content:flex-end;gap:12px;margin-top:8px;}
+  .nav-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px;}
+  .nav-row-right{display:flex;gap:12px;}
+  /* Profilsida */
+  .profile-wrap{max-width:680px;margin:0 auto;padding:40px 24px 80px;}
+  .profile-hero{display:flex;align-items:center;gap:24px;background:var(--ink);color:var(--paper);border-radius:16px;padding:24px 28px;margin-bottom:24px;}
+  .profile-planet{font-size:2.8rem;}
+  .profile-name{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:900;}
+  .profile-week{font-size:.85rem;opacity:.6;margin-top:2px;}
+  .profile-score-big{font-family:'Fraunces',serif;font-size:3rem;font-weight:900;color:var(--accent);margin-left:auto;}
+  .profile-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+  @media(max-width:500px){.profile-grid{grid-template-columns:1fr 1fr;}}
+  .profile-stat{background:white;border-radius:12px;padding:16px 18px;}
+  .ps-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px;}
+  .ps-value{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;line-height:1;}
+  .ps-sub{font-size:.78rem;color:var(--muted);margin-top:2px;}
+  .subject-bars{background:white;border-radius:12px;padding:20px 24px;margin-bottom:20px;}
+  .subject-bars h3{font-family:'Fraunces',serif;font-size:1rem;font-weight:700;margin-bottom:16px;}
+  .bar-row{margin-bottom:14px;}
+  .bar-label{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px;}
+  .bar-label span:last-child{color:var(--muted);}
+  .bar-track{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:4px;transition:width .8s ease;}
+  .history-section{background:white;border-radius:12px;padding:20px 24px;margin-bottom:24px;}
+  .history-section h3{font-family:'Fraunces',serif;font-size:1rem;font-weight:700;margin-bottom:16px;}
+  .history-week{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--soft);}
+  .history-week:last-child{border-bottom:none;}
+  .hw-week{font-size:.8rem;color:var(--muted);width:44px;flex-shrink:0;}
+  .hw-bar-wrap{flex:1;height:6px;background:var(--soft);border-radius:3px;overflow:hidden;}
+  .hw-bar{height:100%;background:var(--accent2);border-radius:3px;transition:width .8s ease;}
+  .hw-score{font-family:'Fraunces',serif;font-weight:700;font-size:.95rem;width:44px;text-align:right;flex-shrink:0;}
+  .profile-done-btn{width:100%;padding:16px;background:var(--ink);color:var(--paper);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;transition:background .15s;margin-top:4px;}
+  .profile-done-btn:hover{background:var(--accent);}
   .done-wrap{max-width:680px;margin:0 auto;padding:40px 24px 80px;}
   .done-wrap h2{font-family:'Fraunces',serif;font-size:2rem;font-weight:900;margin-bottom:6px;}
   .done-wrap .subtitle{color:var(--muted);margin-bottom:32px;}
   .score-circle{width:110px;height:110px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 32px;font-family:'Fraunces',serif;}
   .score-circle .score-num{font-size:2rem;font-weight:900;line-height:1;}
   .score-circle .score-label{font-size:.7rem;opacity:.6;margin-top:2px;}
+  .sheets-status{font-size:.78rem;color:var(--muted);margin-top:8px;min-height:16px;text-align:center;}
+  .sheets-status.ok{color:var(--green);}
   .review-list{display:flex;flex-direction:column;gap:16px;}
   .review-card{background:white;border-radius:12px;padding:20px 24px;border-left:4px solid #ddd;}
   .review-card.correct-card{border-left-color:var(--green);}
@@ -144,7 +183,6 @@
   .modal h3{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:900;margin-bottom:4px;}
   .modal-meta{color:var(--muted);font-size:.85rem;margin-bottom:24px;}
   .mq{background:white;border-radius:10px;padding:18px 20px;margin-bottom:12px;border-left:4px solid #eee;}
-  .mq.mq-ok{border-left-color:var(--green);}
   .mq.mq-warn2{border-left-color:var(--red);}
   .mq.mq-warn1{border-left-color:var(--yellow);}
   .mq.mq-info{border-left-color:var(--accent2);}
@@ -165,9 +203,6 @@
   .spinner{display:inline-block;width:12px;height:12px;border:2px solid #ddd;border-top-color:var(--accent2);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .modal-loading{text-align:center;padding:40px;color:var(--muted);}
-  .sheets-status{font-size:.78rem;color:var(--muted);margin-top:8px;min-height:16px;}
-  .sheets-status.ok{color:var(--green);}
-  .sheets-status.err{color:var(--red);}
 </style>
 </head>
 <body>
@@ -194,15 +229,29 @@
   <div id="quizScreen" class="screen">
     <div class="quiz-wrap">
       <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="question-nav" id="questionNav"></div>
       <div class="subject-label" id="qSubject"></div>
       <div class="question-num" id="qNum"></div>
       <div class="question-text" id="qText"></div>
       <div id="qAnswerArea"></div>
       <div class="feedback-box" id="feedbackBox"></div>
       <div class="nav-row">
-        <button class="btn btn-outline" id="submitBtn" onclick="submitAnswer()">Svara</button>
-        <button class="btn" id="nextBtn" onclick="nextQuestion()" style="display:none">Nästa →</button>
+        <button class="btn btn-outline btn-sm" id="finishBtn" onclick="finishQuiz()" style="display:none">Avsluta quiz →</button>
+        <div class="nav-row-right">
+          <button class="btn btn-outline" id="submitBtn" onclick="submitAnswer()">Svara</button>
+          <button class="btn" id="nextBtn" onclick="nextQuestion()" style="display:none">Nästa →</button>
+        </div>
       </div>
+    </div>
+  </div>
+  <div id="profileScreen" class="screen">
+    <div class="profile-wrap">
+      <div class="profile-hero" id="profileHero"></div>
+      <div class="profile-grid" id="profileGrid"></div>
+      <div class="subject-bars" id="subjectBars"></div>
+      <div class="history-section" id="historySection"></div>
+      <div class="sheets-status" id="sheetsStatus"></div>
+      <button class="profile-done-btn" onclick="showScreen('doneScreen')">Se detaljerade svar →</button>
     </div>
   </div>
   <div id="doneScreen" class="screen">
@@ -213,7 +262,6 @@
         <span class="score-num" id="finalScore">—</span>
         <span class="score-label">poäng</span>
       </div>
-      <div class="sheets-status" id="sheetsStatus"></div>
       <div class="review-list" id="reviewList"></div>
     </div>
   </div>
@@ -245,22 +293,16 @@
 </div>
 
 <script>
-// ── KONFIGURATION ──────────────────────────────────────────────
-const SHEETS_URL = "https://script.google.com/a/macros/franskaelever.se/s/AKfycbygztzJ2wsC6ZyJ3VhidQOqqFbk4ei8qXOR_yz_hAUpZ0Hg4YDHiX0HR3DMOYB5i-Oh/exec";
-const TEACHER_PIN = "LARARE";
-
-// Godkända kodord – ett per elev, dela ut dessa i klassen
-const APPROVED_CODES = [
-  "MERKURIUS","VENUS","MARS","JUPITER","SATURNUS",
-  "URANUS","NEPTUNUS","PLUTO","MÅNEN","TITAN"
-];
-// ──────────────────────────────────────────────────────────────
-
+const SHEETS_URL="https://script.google.com/macros/s/AKfycbxyNbwegj7ZiO5qodpvs9N3Nr9guenUkmzR9nfz8cHThTRJu-QenyYRhvyH28qgcMvz/exec";
+const TEACHER_PIN="LARARE";
+const APPROVED_CODES=["MERKURIUS","VENUS","MARS","JUPITER","SATURNUS","URANUS","NEPTUNUS","PLUTO","MÅNEN","TITAN"];
+const PLANET_EMOJI={MERKURIUS:"☿",VENUS:"♀",MARS:"♂",JUPITER:"🪐",SATURNUS:"🪐",URANUS:"🔵",NEPTUNUS:"🔵",PLUTO:"🌑",MÅNEN:"🌕",TITAN:"🟠"};
 const LEVEL_ORDER=['wrong','e','c','a'];
 const LEVEL_LABELS={a:"Välutvecklat",c:"Utvecklat",e:"Godkänt",wrong:"Hade fel"};
 const LEVEL_SCORES={a:1,c:0.67,e:0.33,wrong:0};
+
 let submissions=[],currentStudent=null,currentQ=0;
-let answers=[],selectedOption=null,tipShown=[],pendingOpenAnswer=null;
+let answers=[],selectedOption=null,tipShown=[],pendingOpenAnswer=null,selfAssessLocked=false;
 
 function getWeekNumber(){
   const d=new Date();d.setHours(0,0,0,0);
@@ -271,74 +313,57 @@ function getWeekNumber(){
 const currentWeek=getWeekNumber();
 document.getElementById('weekBadge').textContent=`Vecka ${currentWeek}`;
 
-const quizData={
-  week:currentWeek,
-  questions:[
-    {id:1,subject:"Matematik",type:"multiple",
-      text:"Vad är 15% av 200?",
-      options:["20","25","30","35"],correct:2,
-      feedback_correct:"Rätt! 15% av 200 = 0,15 × 200 = 30.",
-      feedback_wrong:"Tänk om. 15% betyder 15 av 100. Hur många är det av 200?",
-      facit:"Svaret är 30. 15% = 15/100 = 0,15. Multiplicera: 0,15 × 200 = 30."},
-    {id:2,subject:"Svenska",type:"open",useLevels:true,
-      text:"Förklara skillnaden mellan en berättande och en förklarande text. Ge ett exempel på vardera.",
-      tip:"Tänk på syftet med texten. Vill den berätta en historia eller förklara hur något fungerar?",
-      kompletteraTip:"Försök lägga till varför de två texttyperna används i olika sammanhang, och välj ett mer specifikt exempel.",
-      levels:{
-        e:{example:"\"En berättande text berättar en historia, till exempel en bok. En förklarande text förklarar saker, till exempel ett faktablad.\""},
-        c:{example:"\"En berättande text har en handling och karaktärer som man följer, till exempel en roman. En förklarande text beskriver hur eller varför något fungerar, till exempel ett avsnitt i en lärobok om hur kroppen fungerar.\""},
-        a:{example:"\"Berättande texter vill engagera läsaren i en historia med karaktärer och händelser, som i en roman eller saga. Förklarande texter vill ge läsaren kunskap om hur eller varför något fungerar, som ett faktablad om rymden. Skillnaden handlar alltså om vad texten vill åstadkomma hos den som läser.\""}
-      },
-      aiRubric:"Bedöm elevsvaret: 'a'=tydlig förklaring av båda texttypers syfte plus träffsäkra exempel, 'c'=förklarar skillnaden och ger exempel men utan djupare analys, 'e'=nämner att de är olika och ger exempel men förklarar inte skillnaden, 'wrong'=missförstår eller svarar inte. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\"}"},
-    {id:3,subject:"NO",type:"multiple",
-      text:"Vilket av dessa är ett exempel på ett ekosystem?",
-      options:["En sten i skogen","En sjö med växter, djur och mikroorganismer","Solsystemet","En fotosyntesreaktion"],
-      correct:1,
-      feedback_correct:"Precis! Ett ekosystem är levande organismer och deras miljö som samverkar.",
-      feedback_wrong:"Ett ekosystem kräver levande organismer som samverkar med sin miljö.",
-      facit:"Rätt svar: en sjö med växter, djur och mikroorganismer."},
-    {id:4,subject:"Matematik",type:"open",useLevels:false,
-      text:"Lisa cyklar 3 km på 12 minuter. Hur lång tid tar det henne att cykla 10 km? Visa hur du tänker.",
-      tip:"Börja med att räkna ut hur lång tid det tar per kilometer.",
-      facit:"3 km på 12 min → 1 km tar 4 min. 10 km × 4 min = 40 minuter."},
-    {id:5,subject:"Svenska",type:"multiple",
-      text:"Vilket ord är ett substantiv?",
-      options:["Snabbt","Springa","Träd","Grön"],correct:2,
-      feedback_correct:"Rätt! Träd är ett substantiv eftersom det betecknar ett ting.",
-      feedback_wrong:"Substantiv betecknar personer, platser, ting eller fenomen. Vilket ord gör det?",
-      facit:"Rätt svar: Träd. Snabbt = adverb, Springa = verb, Grön = adjektiv."}
-  ]
-};
-
-// ── GOOGLE SHEETS ─────────────────────────────────────────────
-async function saveToSheets(submission){
-  try{
-    // no-cors krävs från GitHub Pages mot Apps Script
-    // Vi kan inte läsa svaret men anropet går igenom
-    await fetch(SHEETS_URL,{
-      method:"POST",
-      mode:"no-cors",
-      headers:{"Content-Type":"text/plain"},
-      body:JSON.stringify(submission)
-    });
-    return true;
-  }catch(e){
-    console.error("Sheets-fel:",e);
-    return false;
-  }
+function isCodeLocked(code){
+  try{const d=JSON.parse(localStorage.getItem('fq_used')||'{}');return d[code]===currentWeek;}catch{return false;}
+}
+function lockCode(code){
+  try{const d=JSON.parse(localStorage.getItem('fq_used')||'{}');d[code]=currentWeek;localStorage.setItem('fq_used',JSON.stringify(d));}catch{}
 }
 
+const quizData={week:currentWeek,questions:[
+  {id:1,subject:"Matematik",type:"multiple",
+    text:"Vad är 15% av 200?",
+    options:["20","25","30","35"],correct:2,
+    feedback_correct:"Rätt! 15% av 200 = 0,15 × 200 = 30.",
+    feedback_wrong:"Tänk om. 15% betyder 15 av 100. Hur många är det av 200?",
+    facit:"Svaret är 30. 15% = 15/100 = 0,15. Multiplicera: 0,15 × 200 = 30."},
+  {id:2,subject:"Svenska",type:"open",useLevels:true,
+    text:"Förklara skillnaden mellan en berättande och en förklarande text. Ge ett exempel på vardera.",
+    tip:"Tänk på syftet med texten. Vill den berätta en historia eller förklara hur något fungerar?",
+    kompletteraTip:"Försök lägga till varför de två texttyperna används i olika sammanhang, och välj ett mer specifikt exempel.",
+    levels:{
+      e:{example:"\"En berättande text berättar en historia, till exempel en bok. En förklarande text förklarar saker, till exempel ett faktablad.\""},
+      c:{example:"\"En berättande text har en handling och karaktärer som man följer, till exempel en roman. En förklarande text beskriver hur eller varför något fungerar, till exempel ett avsnitt i en lärobok om hur kroppen fungerar.\""},
+      a:{example:"\"Berättande texter vill engagera läsaren i en historia med karaktärer och händelser, som i en roman eller saga. Förklarande texter vill ge läsaren kunskap om hur eller varför något fungerar, som ett faktablad om rymden. Skillnaden handlar alltså om vad texten vill åstadkomma hos den som läser.\""}
+    },
+    aiRubric:"Bedöm elevsvaret: 'a'=tydlig förklaring av båda texttypers syfte plus träffsäkra exempel, 'c'=förklarar skillnaden och ger exempel men utan djupare analys, 'e'=nämner att de är olika och ger exempel men förklarar inte skillnaden, 'wrong'=missförstår eller svarar inte. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\"}"},
+  {id:3,subject:"NO",type:"multiple",
+    text:"Vilket av dessa är ett exempel på ett ekosystem?",
+    options:["En sten i skogen","En sjö med växter, djur och mikroorganismer","Solsystemet","En fotosyntesreaktion"],
+    correct:1,
+    feedback_correct:"Precis! Ett ekosystem är levande organismer och deras miljö som samverkar.",
+    feedback_wrong:"Ett ekosystem kräver levande organismer som samverkar med sin miljö.",
+    facit:"Rätt svar: en sjö med växter, djur och mikroorganismer."},
+  {id:4,subject:"Matematik",type:"open",useLevels:false,
+    text:"Lisa cyklar 3 km på 12 minuter. Hur lång tid tar det henne att cykla 10 km? Visa hur du tänker.",
+    tip:"Börja med att räkna ut hur lång tid det tar per kilometer.",
+    facit:"3 km på 12 min → 1 km tar 4 min. 10 km × 4 min = 40 minuter."},
+  {id:5,subject:"Svenska",type:"multiple",
+    text:"Vilket ord är ett substantiv?",
+    options:["Snabbt","Springa","Träd","Grön"],correct:2,
+    feedback_correct:"Rätt! Träd är ett substantiv eftersom det betecknar ett ting.",
+    feedback_wrong:"Substantiv betecknar personer, platser, ting eller fenomen. Vilket ord gör det?",
+    facit:"Rätt svar: Träd. Snabbt = adverb, Springa = verb, Grön = adjektiv."}
+]};
+
+async function saveToSheets(s){
+  try{await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(s)});return true;}
+  catch{return false;}
+}
 async function loadFromSheets(){
-  try{
-    const res=await fetch(SHEETS_URL+"?action=get");
-    const data=await res.json();
-    return Array.isArray(data)?data:[];
-  }catch(e){
-    console.error("Sheets-fel:",e);
-    return [];
-  }
+  try{const r=await fetch(SHEETS_URL);const d=await r.json();return Array.isArray(d)?d:[];}
+  catch{return[];}
 }
-// ─────────────────────────────────────────────────────────────
 
 function showMode(mode){
   document.getElementById('tabStudent').classList.toggle('active',mode==='student');
@@ -353,41 +378,135 @@ function showTeacherScreen(id){document.querySelectorAll('#teacherFlow .screen')
 function startQuiz(){
   const code=document.getElementById('codeInput').value.trim().toUpperCase();
   if(!code){document.getElementById('codeError').textContent='Ange ditt kodord.';return;}
-  if(!APPROVED_CODES.includes(code)){
-    document.getElementById('codeError').textContent='Okänt kodord. Kolla med din lärare.';
-    return;
-  }
+  if(!APPROVED_CODES.includes(code)){document.getElementById('codeError').textContent='Okänt kodord. Kolla med din lärare.';return;}
+  if(isCodeLocked(code)){document.getElementById('codeError').textContent='Det kodordet har redan använts den här veckan.';return;}
   document.getElementById('codeError').textContent='';
-  currentStudent=code;currentQ=0;answers=[];selectedOption=null;pendingOpenAnswer=null;
+  currentStudent=code;currentQ=0;answers=[];selectedOption=null;pendingOpenAnswer=null;selfAssessLocked=false;
   tipShown=quizData.questions.map(()=>false);
   showScreen('quizScreen');renderQuestion();
+}
+
+function renderQuestionNav(){
+  const total=quizData.questions.length;
+  document.getElementById('questionNav').innerHTML=quizData.questions.map((_,i)=>{
+    const answered=answers.some(a=>a.qId===quizData.questions[i].id);
+    const isCurrent=i===currentQ;
+    const isLocked=i>currentQ&&!answered;
+    return `<button class="qnav-btn${isCurrent?' current':answered?' answered':isLocked?' locked':''}"
+      onclick="${isLocked?'':`jumpToQuestion(${i})`}" title="Fråga ${i+1}">${i+1}</button>`;
+  }).join('');
+}
+
+function jumpToQuestion(idx){
+  if(idx===currentQ)return;
+  const q=quizData.questions[idx];
+  const alreadyAnswered=answers.some(a=>a.qId===q.id);
+  if(idx>currentQ&&!alreadyAnswered)return;
+  currentQ=idx;selectedOption=null;pendingOpenAnswer=null;selfAssessLocked=false;
+  renderQuestion();
+}
+
+function updateFinishBtn(){
+  const allAnswered=quizData.questions.every(q=>answers.some(a=>a.qId===q.id));
+  document.getElementById('finishBtn').style.display=allAnswered?'':'none';
 }
 
 function renderQuestion(){
   const q=quizData.questions[currentQ];
   const total=quizData.questions.length;
-  document.getElementById('progressBar').style.width=`${(currentQ/total)*100}%`;
+  document.getElementById('progressBar').style.width=`${(answers.length/total)*100}%`;
+  renderQuestionNav();
   document.getElementById('qSubject').textContent=q.subject;
   document.getElementById('qNum').textContent=`Fråga ${currentQ+1} av ${total}`;
   document.getElementById('qText').textContent=q.text;
   const fb=document.getElementById('feedbackBox');fb.className='feedback-box';fb.innerHTML='';
-  document.getElementById('submitBtn').style.display='';document.getElementById('submitBtn').disabled=false;
+  document.getElementById('submitBtn').style.display='';
+  document.getElementById('submitBtn').disabled=false;
   document.getElementById('nextBtn').style.display='none';
-  selectedOption=null;pendingOpenAnswer=null;selfAssessLocked=false;
+  updateFinishBtn();
+  selfAssessLocked=false;
   const area=document.getElementById('qAnswerArea');
+  const existing=answers.find(a=>a.qId===q.id);
+
   if(q.type==='multiple'){
     area.innerHTML=`<div class="options-list">${q.options.map((o,i)=>
       `<button class="option-btn" id="opt${i}" onclick="selectOption(${i})">
         <span class="option-letter">${String.fromCharCode(65+i)}</span><span>${o}</span>
       </button>`).join('')}</div>`;
+    if(existing){
+      const prevIdx=q.options.indexOf(existing.answer);
+      document.querySelectorAll('.option-btn').forEach((b,idx)=>{
+        b.onclick=null;
+        if(idx===q.correct)b.classList.add('correct');
+        else if(idx===prevIdx&&!existing.correct)b.classList.add('wrong');
+      });
+      fb.className=`feedback-box show ${existing.correct?'correct-fb':'wrong-fb'}`;
+      fb.innerHTML=`<strong>${existing.correct?'✓ Rätt!':'✗ Inte riktigt'}</strong>${existing.correct?q.feedback_correct:q.feedback_wrong}`;
+      area.innerHTML+=`<div class="facit-box"><div class="facit-label">Facit</div><div class="facit-text">${q.facit}</div></div>`;
+      document.getElementById('submitBtn').style.display='none';
+      document.getElementById('nextBtn').style.display='';
+      document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
+    }
   }else{
     area.innerHTML=`<div class="open-answer-area">
       <div class="tip-row">${q.tip?`<button class="btn btn-sm btn-tip" id="tipBtn" onclick="showTip()">💡 Be om ett tips</button>
         <div id="tipBox" style="display:none" class="tip-box"><strong>Tips</strong><span id="tipText"></span></div>`:''}
       </div>
-      <textarea id="openAnswer" placeholder="Skriv ditt svar här..."></textarea>
+      <textarea id="openAnswer" placeholder="Skriv ditt svar här...">${existing?existing.answer:''}</textarea>
     </div>`;
+    if(tipShown[currentQ]){
+      const tb=document.getElementById('tipBtn');if(tb)tb.style.display='none';
+      document.getElementById('tipText').textContent=q.tip;
+      document.getElementById('tipBox').style.display='block';
+    }
+    if(existing){
+      document.getElementById('openAnswer').disabled=true;
+      document.getElementById('submitBtn').style.display='none';
+      const tb=document.getElementById('tipBtn');if(tb)tb.style.display='none';
+      pendingOpenAnswer=existing.answer;
+      if(q.useLevels){
+        area.innerHTML+=buildLevelFacit(q);
+        if(q.kompletteraTip)area.innerHTML+=`<div class="komplettera-tip"><div class="kt-label">Tips för att utveckla svaret</div><div class="kt-text">${q.kompletteraTip}</div></div>`;
+        area.innerHTML+=`<div class="self-assess" id="selfAssess">
+          <p>Vilket exempel liknar ditt svar mest? <span style="font-size:.8rem;color:var(--muted)">(du kan ändra)</span></p>
+          <div class="self-assess-btns">
+            <button class="sa-btn${existing.selfAssess==='a'?' sel-a':''}" onclick="updateSelfAssess('a',this)">Välutvecklat</button>
+            <button class="sa-btn${existing.selfAssess==='c'?' sel-c':''}" onclick="updateSelfAssess('c',this)">Utvecklat</button>
+            <button class="sa-btn${existing.selfAssess==='e'?' sel-e':''}" onclick="updateSelfAssess('e',this)">Godkänt</button>
+            <button class="sa-btn${existing.selfAssess==='wrong'?' sel-wrong':''}" onclick="updateSelfAssess('wrong',this)">Hade fel</button>
+          </div>
+        </div>`;
+        if(existing.komplettering)area.innerHTML+=`<div class="komplettera-done">✓ Komplettering sparad!</div>`;
+      }else{
+        area.innerHTML+=`<div class="facit-box"><div class="facit-label">Facit</div><div class="facit-text">${q.facit}</div></div>`;
+        area.innerHTML+=`<div class="self-assess" id="selfAssess">
+          <p>Hur stämde ditt svar? <span style="font-size:.8rem;color:var(--muted)">(du kan ändra)</span></p>
+          <div class="self-assess-btns">
+            <button class="sa-btn${existing.selfAssess==='right'?' sel-a':''}" onclick="updateSelfAssessSimple(1,'right',this)">✓ Hade rätt</button>
+            <button class="sa-btn${existing.selfAssess==='partial'?' sel-c':''}" onclick="updateSelfAssessSimple(0.5,'partial',this)">~ Delvis rätt</button>
+            <button class="sa-btn${existing.selfAssess==='wrong'?' sel-wrong':''}" onclick="updateSelfAssessSimple(0,'wrong',this)">✗ Hade fel</button>
+          </div>
+        </div>`;
+      }
+      document.getElementById('nextBtn').style.display='';
+      document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
+    }
   }
+}
+
+function updateSelfAssess(level,btn){
+  const q=quizData.questions[currentQ];
+  const aIdx=answers.findIndex(a=>a.qId===q.id&&a.type==='open');
+  if(aIdx>-1){answers[aIdx].selfAssess=level;answers[aIdx].score=LEVEL_SCORES[level];}
+  document.querySelectorAll('.sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
+  btn.classList.add(`sel-${level}`);
+}
+function updateSelfAssessSimple(score,type,btn){
+  const q=quizData.questions[currentQ];
+  const aIdx=answers.findIndex(a=>a.qId===q.id&&a.type==='open');
+  if(aIdx>-1){answers[aIdx].selfAssess=type;answers[aIdx].score=score;}
+  document.querySelectorAll('.sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
+  btn.classList.add({right:'sel-a',partial:'sel-c',wrong:'sel-wrong'}[type]||'sel-wrong');
 }
 
 function showTip(){
@@ -408,9 +527,10 @@ function buildLevelFacit(q){
     <div class="level-row a-row"><div class="level-example">${q.levels.a.example}</div></div>
   </div>`;
 }
+
 function submitAnswer(){
   const q=quizData.questions[currentQ];
-  const submitBtn=document.getElementById('submitBtn');
+  const total=quizData.questions.length;
   if(q.type==='multiple'){
     if(selectedOption===null)return;
     const isCorrect=selectedOption===q.correct;
@@ -423,18 +543,20 @@ function submitAnswer(){
     fb.className=`feedback-box show ${isCorrect?'correct-fb':'wrong-fb'}`;
     fb.innerHTML=`<strong>${isCorrect?'✓ Rätt!':'✗ Inte riktigt'}</strong>${isCorrect?q.feedback_correct:q.feedback_wrong}`;
     document.getElementById('qAnswerArea').innerHTML+=`<div class="facit-box"><div class="facit-label">Facit</div><div class="facit-text">${q.facit}</div></div>`;
+    const aIdx=answers.findIndex(a=>a.qId===q.id);if(aIdx>-1)answers.splice(aIdx,1);
     answers.push({qId:q.id,type:'multiple',answer:q.options[selectedOption],correct:isCorrect,score:isCorrect?1:0,usedTip:false,aiLevel:null,aiReason:null,aiDone:true});
-    selectedOption=null;submitBtn.style.display='none';
+    selectedOption=null;
+    document.getElementById('submitBtn').style.display='none';
     document.getElementById('nextBtn').style.display='';
-    document.getElementById('nextBtn').textContent=currentQ<quizData.questions.length-1?'Nästa →':'Se resultat';
+    document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
+    renderQuestionNav();updateFinishBtn();
   }else{
     const text=document.getElementById('openAnswer')?.value.trim();
-    if(!text)return;
-    if(pendingOpenAnswer)return;
+    if(!text||pendingOpenAnswer)return;
     pendingOpenAnswer=text;
     document.getElementById('openAnswer').disabled=true;
-    submitBtn.style.display='none';
-    const tipBtn=document.getElementById('tipBtn');if(tipBtn)tipBtn.style.display='none';
+    document.getElementById('submitBtn').style.display='none';
+    const tb=document.getElementById('tipBtn');if(tb)tb.style.display='none';
     const area=document.getElementById('qAnswerArea');
     if(q.useLevels){
       area.innerHTML+=buildLevelFacit(q);
@@ -462,12 +584,11 @@ function submitAnswer(){
   }
 }
 
-let selfAssessLocked=false;
 async function setSelfAssess(level,btn){
   if(selfAssessLocked)return;
   const q=quizData.questions[currentQ];
-  const existing=answers.findIndex(a=>a.qId===q.id&&a.type==='open');
-  if(existing>-1)answers.splice(existing,1);
+  const total=quizData.questions.length;
+  const ex=answers.findIndex(a=>a.qId===q.id&&a.type==='open');if(ex>-1)answers.splice(ex,1);
   document.querySelectorAll('.sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
   btn.classList.add(`sel-${level}`);
   const aObj={qId:q.id,type:'open',answer:pendingOpenAnswer,score:LEVEL_SCORES[level],selfAssess:level,
@@ -477,6 +598,7 @@ async function setSelfAssess(level,btn){
     aObj._aiPromise=gradeWithAI(q,pendingOpenAnswer).then(r=>{aObj.aiLevel=r.level;aObj.aiReason=r.reason;aObj.aiDone=true;});
   }else{aObj.aiDone=true;}
   selfAssessLocked=true;
+  renderQuestionNav();updateFinishBtn();
   setTimeout(()=>{
     if(document.getElementById('kompletteraOffer'))return;
     document.getElementById('qAnswerArea').innerHTML+=`
@@ -492,29 +614,29 @@ async function setSelfAssess(level,btn){
 
 function setSelfAssessSimple(score,type,btn){
   const q=quizData.questions[currentQ];
+  const total=quizData.questions.length;
   document.querySelectorAll('.sa-btn').forEach(b=>b.onclick=null);
-  const cls={right:'sel-a',partial:'sel-c',wrong:'sel-wrong'};
-  btn.classList.add(cls[type]||'sel-wrong');
+  btn.classList.add({right:'sel-a',partial:'sel-c',wrong:'sel-wrong'}[type]||'sel-wrong');
+  const ex=answers.findIndex(a=>a.qId===q.id&&a.type==='open');if(ex>-1)answers.splice(ex,1);
   answers.push({qId:q.id,type:'open',answer:pendingOpenAnswer,score,selfAssess:type,
     usedTip:tipShown[currentQ],komplettering:null,kompletteringDeclined:false,aiLevel:null,aiReason:null,aiDone:true});
+  renderQuestionNav();updateFinishBtn();
   setTimeout(()=>{
     document.getElementById('nextBtn').style.display='';
-    document.getElementById('nextBtn').textContent=currentQ<quizData.questions.length-1?'Nästa →':'Se resultat';
+    document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
   },350);
 }
 
-async function gradeWithAI(q,studentAnswer){
+async function gradeWithAI(q,ans){
   try{
-    const res=await fetch("https://api.anthropic.com/v1/messages",{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",max_tokens:200,
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,
         system:"Du gör en hemlig bedömning av ett elevsvar. Svara BARA med JSON utan markdown.",
-        messages:[{role:"user",content:`${q.aiRubric}\n\nFråga: ${q.text}\nElevens svar: ${studentAnswer}`}]
-      })
+        messages:[{role:"user",content:`${q.aiRubric}\n\nFråga: ${q.text}\nElevens svar: ${ans}`}]})
     });
-    const data=await res.json();
-    const raw=data.content.find(b=>b.type==='text')?.text||'{}';
+    const d=await r.json();
+    const raw=d.content.find(b=>b.type==='text')?.text||'{}';
     return JSON.parse(raw.replace(/```json|```/g,'').trim());
   }catch{return{level:null,reason:null};}
 }
@@ -537,41 +659,38 @@ function sparaKomplettering(qId){
   if(aIdx>-1)answers[aIdx].komplettering=text;
   document.getElementById('kompletteraForm').remove();
   document.getElementById('qAnswerArea').innerHTML+=`<div class="komplettera-done">✓ Komplettering sparad!</div>`;
+  const total=quizData.questions.length;
   setTimeout(()=>{
     document.getElementById('nextBtn').style.display='';
-    document.getElementById('nextBtn').textContent=currentQ<quizData.questions.length-1?'Nästa →':'Se resultat';
+    document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
   },300);
 }
 function neka(qId){
   const aIdx=answers.findIndex(a=>a.qId===qId&&a.type==='open');
   if(aIdx>-1)answers[aIdx].kompletteringDeclined=true;
   document.getElementById('kompletteraOffer').remove();
+  const total=quizData.questions.length;
   document.getElementById('nextBtn').style.display='';
-  document.getElementById('nextBtn').textContent=currentQ<quizData.questions.length-1?'Nästa →':'Se resultat';
+  document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
 }
+
 function nextQuestion(){
-  currentQ++;
-  if(currentQ>=quizData.questions.length)finishQuiz();
-  else{selectedOption=null;pendingOpenAnswer=null;renderQuestion();}
+  if(currentQ<quizData.questions.length-1){
+    currentQ++;selectedOption=null;pendingOpenAnswer=null;selfAssessLocked=false;renderQuestion();
+  }else{finishQuiz();}
 }
 
 async function finishQuiz(){
   const total=quizData.questions.length;
   const rawScore=answers.reduce((s,a)=>s+a.score,0);
   const pct=Math.round((rawScore/total)*100);
-  const submission={
-    student:currentStudent,
-    week:currentWeek,
-    score:pct,
-    rawScore,
-    total,
-    answers:[...answers],
-    timestamp:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})
-  };
+  const submission={student:currentStudent,week:currentWeek,score:pct,rawScore,total,
+    answers:[...answers],timestamp:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})};
   submissions.push(submission);
+  lockCode(currentStudent);
+
   document.getElementById('finalScore').textContent=`${pct}%`;
   document.getElementById('doneTitle').textContent=pct===100?'🏆 Perfekt!':pct>=70?'Bra jobbat! 🎉':'Klart!';
-  document.getElementById('progressBar').style.width='100%';
   document.getElementById('reviewList').innerHTML=answers.map(a=>{
     const q=quizData.questions.find(q=>q.id===a.qId);
     const cls=a.score>=0.9?'correct-card':a.score>0?'partial-card':'wrong-card';
@@ -583,25 +702,74 @@ async function finishQuiz(){
       ${a.komplettering?`<div class="review-komplettering"><strong>Din komplettering</strong>${a.komplettering}</div>`:''}
     </div>`;
   }).join('');
-  showScreen('doneScreen');
 
-  // Spara till Google Sheets
+  renderProfileScreen(submission,pct);
+  showScreen('profileScreen');
+
   const statusEl=document.getElementById('sheetsStatus');
-  statusEl.textContent='Sparar ditt resultat...';
+  statusEl.textContent='Sparar...';
   await saveToSheets(submission);
-  statusEl.textContent='✓ Inlämnat!';
+  statusEl.textContent='✓ Sparat!';
   statusEl.className='sheets-status ok';
+}
+
+function renderProfileScreen(submission,pct){
+  const emoji=PLANET_EMOJI[currentStudent]||'🌟';
+  document.getElementById('profileHero').innerHTML=`
+    <span class="profile-planet">${emoji}</span>
+    <div><div class="profile-name">${currentStudent}</div><div class="profile-week">Vecka ${currentWeek}</div></div>
+    <div class="profile-score-big">${pct}%</div>`;
+
+  const correct=answers.filter(a=>a.score>=0.9).length;
+  const partial=answers.filter(a=>a.score>0&&a.score<0.9).length;
+  const wrong=answers.filter(a=>a.score===0).length;
+  const tips=answers.filter(a=>a.usedTip).length;
+  const komp=answers.filter(a=>a.komplettering).length;
+  document.getElementById('profileGrid').innerHTML=`
+    <div class="profile-stat"><div class="ps-label">Rätt svar</div><div class="ps-value" style="color:var(--green)">${correct}</div><div class="ps-sub">av ${answers.length} frågor</div></div>
+    <div class="profile-stat"><div class="ps-label">Delvis rätt</div><div class="ps-value" style="color:#e08020">${partial}</div><div class="ps-sub">frågor</div></div>
+    <div class="profile-stat"><div class="ps-label">Fel</div><div class="ps-value" style="color:var(--red)">${wrong}</div><div class="ps-sub">frågor</div></div>
+    <div class="profile-stat"><div class="ps-label">Tips använda</div><div class="ps-value">${tips}</div><div class="ps-sub">gånger</div></div>
+    <div class="profile-stat"><div class="ps-label">Kompletterade</div><div class="ps-value">${komp}</div><div class="ps-sub">svar</div></div>`;
+
+  const subjects={};
+  answers.forEach(a=>{
+    const q=quizData.questions.find(q=>q.id===a.qId);if(!q)return;
+    if(!subjects[q.subject])subjects[q.subject]={total:0,score:0};
+    subjects[q.subject].total++;subjects[q.subject].score+=a.score;
+  });
+  const colors=['var(--accent2)','var(--green)','var(--accent)','var(--yellow)'];
+  document.getElementById('subjectBars').innerHTML=`<h3>Per ämne</h3>`+
+    Object.entries(subjects).map(([s,d],i)=>{
+      const p=Math.round((d.score/d.total)*100);
+      return `<div class="bar-row">
+        <div class="bar-label"><span>${s}</span><span>${p}%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${colors[i%colors.length]}"></div></div>
+      </div>`;
+    }).join('');
+
+  let history=[];
+  try{history=JSON.parse(localStorage.getItem(`fq_history_${currentStudent}`)||'[]');}catch{}
+  history=history.filter(h=>h.week!==currentWeek);
+  history.push({week:currentWeek,score:pct});
+  history.sort((a,b)=>a.week-b.week);
+  try{localStorage.setItem(`fq_history_${currentStudent}`,JSON.stringify(history));}catch{}
+
+  const histEl=document.getElementById('historySection');
+  if(history.length<=1){histEl.innerHTML='';return;}
+  const maxScore=Math.max(...history.map(h=>h.score));
+  histEl.innerHTML=`<h3>Historik</h3>`+history.map(h=>`
+    <div class="history-week">
+      <span class="hw-week">v.${h.week}</span>
+      <div class="hw-bar-wrap"><div class="hw-bar" style="width:${(h.score/maxScore)*100}%"></div></div>
+      <span class="hw-score">${h.score}%</span>
+    </div>`).join('');
 }
 
 function checkTeacherPin(){
   const pin=document.getElementById('teacherPinInput').value.trim().toUpperCase();
-  if(pin===TEACHER_PIN){
-    document.getElementById('pinError').textContent='';
-    showTeacherScreen('teacherDashScreen');
-    loadTeacherDash();
-  }else{
-    document.getElementById('pinError').textContent='Fel kod, försök igen.';
-  }
+  if(pin===TEACHER_PIN){document.getElementById('pinError').textContent='';showTeacherScreen('teacherDashScreen');loadTeacherDash();}
+  else document.getElementById('pinError').textContent='Fel kod, försök igen.';
 }
 
 async function loadTeacherDash(){
@@ -609,11 +777,8 @@ async function loadTeacherDash(){
   document.getElementById('insightsGrid').innerHTML='';
   document.getElementById('teacherSubtitle').textContent='Laddar...';
   const sheetsData=await loadFromSheets();
-  // Slå ihop med eventuella lokala inlämningar från samma session
   sheetsData.forEach(s=>{
-    if(!submissions.find(x=>x.student===s.student&&x.week===s.week&&x.timestamp===s.timestamp)){
-      submissions.push(s);
-    }
+    if(!submissions.find(x=>x.student===s.student&&x.week===s.week&&x.timestamp===s.timestamp))submissions.push(s);
   });
   renderTeacherDash();
 }
@@ -621,14 +786,10 @@ async function loadTeacherDash(){
 function mismatchDir(a){
   if(!a.aiLevel||!a.selfAssess)return null;
   const selfKey=a.selfAssess==='right'?'a':a.selfAssess==='partial'?'c':a.selfAssess==='wrong'?'wrong':a.selfAssess;
-  const ai=LEVEL_ORDER.indexOf(a.aiLevel);
-  const self=LEVEL_ORDER.indexOf(selfKey);
+  const ai=LEVEL_ORDER.indexOf(a.aiLevel),self=LEVEL_ORDER.indexOf(selfKey);
   if(ai<0||self<0)return null;
   const diff=self-ai;
-  if(diff>=2)return'over2';
-  if(diff===1)return'over1';
-  if(diff<=-2)return'under2';
-  if(diff===-1)return'under1';
+  if(diff>=2)return'over2';if(diff===1)return'over1';if(diff<=-2)return'under2';if(diff===-1)return'under1';
   return null;
 }
 
@@ -659,8 +820,7 @@ function renderTeacherDash(){
         if(dir==='under1')chips.push(`<span class="flag-chip chip-under1">○ underskattning ${q?.subject||''}</span>`);
       });
       return `<tr class="clickable" onclick="openStudentModal(${i})">
-        <td><strong>${s.student}</strong></td>
-        <td style="color:var(--muted);font-size:.85rem">v.${s.week}</td>
+        <td><strong>${s.student}</strong></td><td style="color:var(--muted);font-size:.85rem">v.${s.week}</td>
         <td style="color:var(--muted);font-size:.85rem">${s.timestamp}</td>
         <td><span class="score-pill ${cls}">${s.score}%</span></td>
         <td>${chips.length?chips.join(''):'<span style="color:var(--muted);font-size:.82rem">inga</span>'}</td>
@@ -674,15 +834,13 @@ async function openStudentModal(idx){
   document.getElementById('modalContent').innerHTML=`<div class="modal-loading"><span class="spinner"></span> Hämtar bedömning...</div>`;
   document.getElementById('modalOverlay').classList.add('open');
   const liveAnswers=answers.filter(a=>a._aiPromise);
-  const timeout=new Promise(resolve=>setTimeout(resolve,10000));
-  await Promise.race([Promise.all(liveAnswers.map(a=>a._aiPromise)),timeout]);
+  await Promise.race([Promise.all(liveAnswers.map(a=>a._aiPromise)),new Promise(r=>setTimeout(r,10000))]);
   sub.answers.forEach(sa=>{
     const live=answers.find(a=>a.qId===sa.qId&&a.type===sa.type);
     if(live){sa.aiLevel=live.aiLevel??null;sa.aiReason=live.aiReason??null;sa.aiDone=live.aiDone;}
   });
   const rows=(sub.answers||[]).map(a=>{
-    const q=quizData.questions.find(q=>q.id===a.qId);
-    if(!q)return'';
+    const q=quizData.questions.find(q=>q.id===a.qId);if(!q)return'';
     const scoreLabel=a.score>=0.9?'✓ Rätt':a.score>0?'Delvis':'✗ Fel';
     const color=a.score>=0.9?'var(--green)':a.score>0?'#e08020':'var(--red)';
     let flagHtml='';
