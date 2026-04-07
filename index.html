@@ -608,9 +608,7 @@ function submitAnswer(){
 }
 
 async function setSelfAssess(level,btn){
-  if(selfAssessLocked)return;
   const q=quizData.questions[currentQ];
-  const total=quizData.questions.length;
   const ex=answers.findIndex(a=>a.qId===q.id&&a.type==='open');if(ex>-1)answers.splice(ex,1);
   document.querySelectorAll('.sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
   btn.classList.add(`sel-${level}`);
@@ -620,19 +618,22 @@ async function setSelfAssess(level,btn){
   if(q.aiRubric){
     aObj._aiPromise=gradeWithAI(q,pendingOpenAnswer).then(r=>{aObj.aiLevel=r.level;aObj.aiReason=r.reason;aObj.aiDone=true;});
   }else{aObj.aiDone=true;}
-  selfAssessLocked=true;
   renderQuestionNav();updateFinishBtn();
-  setTimeout(()=>{
-    if(document.getElementById('kompletteraOffer'))return;
-    document.getElementById('qAnswerArea').innerHTML+=`
-      <div class="komplettera-offer" id="kompletteraOffer">
-        <p>Vill du försöka komplettera ditt svar?</p>
-        <div class="offer-btns">
-          <button class="btn btn-sm btn-yes" onclick="visaKompletteraFalt(${q.id})">Ja, jag provar</button>
-          <button class="btn btn-sm btn-no" onclick="neka(${q.id})">Nej tack</button>
-        </div>
-      </div>`;
-  },350);
+  // Visa kompletteringserbjudande bara en gång
+  if(!selfAssessLocked){
+    selfAssessLocked=true;
+    setTimeout(()=>{
+      if(document.getElementById('kompletteraOffer'))return;
+      document.getElementById('qAnswerArea').innerHTML+=`
+        <div class="komplettera-offer" id="kompletteraOffer">
+          <p>Vill du försöka komplettera ditt svar?</p>
+          <div class="offer-btns">
+            <button class="btn btn-sm btn-yes" onclick="visaKompletteraFalt(${q.id})">Ja, jag provar</button>
+            <button class="btn btn-sm btn-no" onclick="neka(${q.id})">Nej tack</button>
+          </div>
+        </div>`;
+    },350);
+  }
 }
 
 function setSelfAssessSimple(score,type,btn){
@@ -727,17 +728,53 @@ async function finishQuiz(){
   document.getElementById('finalScore').textContent=`${pct}%`;
   document.getElementById('doneTitle').textContent=pct===100?'🏆 Perfekt!':pct>=70?'Bra jobbat! 🎉':'Klart!';
   document.querySelector('#doneScreen .subtitle').textContent=`Inlämnat ${tidVisning}`;
-  document.getElementById('reviewList').innerHTML=answers.map(a=>{
-    const q=quizData.questions.find(q=>q.id===a.qId);
-    const cls=a.score>=0.9?'correct-card':a.score>0?'partial-card':'wrong-card';
-    const sl=a.score>=0.9?'✓ Rätt':a.score>0?'Delvis':'✗ Fel';
-    return `<div class="review-card ${cls}">
-      <div class="review-subject">${q.subject} · ${sl}</div>
-      <div class="review-q">${q.text}</div>
-      <div class="review-answer">Ditt svar: <span>${a.answer}</span></div>
-      ${a.komplettering?`<div class="review-komplettering"><strong>Din komplettering</strong>${a.komplettering}</div>`:''}
-    </div>`;
-  }).join('');
+
+  function buildReviewList(){
+    document.getElementById('reviewList').innerHTML=answers.map(a=>{
+      const q=quizData.questions.find(q=>q.id===a.qId);
+      const cls=a.score>=0.9?'correct-card':a.score>0?'partial-card':'wrong-card';
+      const sl=a.score>=0.9?'✓ Rätt':a.score>0?'Delvis':'✗ Fel';
+      let aiHtml='';
+      if(a.type==='open'&&q.useLevels){
+        if(a.aiLevel){
+          const aiLabel={a:'Välutvecklat',c:'Utvecklat',e:'Godkänt',wrong:'Hade fel'}[a.aiLevel]||a.aiLevel;
+          const selfLabel={a:'Välutvecklat',c:'Utvecklat',e:'Godkänt',wrong:'Hade fel',right:'Rätt',partial:'Delvis rätt'}[a.selfAssess]||a.selfAssess;
+          const selfIdx=LEVEL_ORDER.indexOf(a.selfAssess==='right'?'a':a.selfAssess==='partial'?'c':a.selfAssess==='wrong'?'wrong':a.selfAssess);
+          const aiIdx=LEVEL_ORDER.indexOf(a.aiLevel);
+          const diff=selfIdx-aiIdx;
+          let feedbackCls='',feedbackIcon='';
+          if(diff>=2){feedbackCls='wrong-fb';feedbackIcon='⚠️';}
+          else if(diff===1){feedbackCls='';feedbackIcon='💡';}
+          else if(diff<=-1){feedbackCls='';feedbackIcon='💪';}
+          else{feedbackCls='correct-fb';feedbackIcon='✓';}
+          aiHtml=`<div class="review-ai ${feedbackCls}" style="margin-top:8px;padding:10px 14px;border-radius:8px;background:${diff>=2?'#fdf0f0':diff<=-1?'#e8f0ff':'#f5f5f0'};font-size:.85rem;line-height:1.5;">
+            <strong style="display:block;margin-bottom:2px;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7">${feedbackIcon} AI-bedömning</strong>
+            Du valde <strong>${selfLabel}</strong> · AI bedömde <strong>${aiLabel}</strong>${a.aiReason?`<br><span style="opacity:.75">${a.aiReason}</span>`:''}
+          </div>`;
+        }else{
+          aiHtml=`<div id="ai-pending-${a.qId}" style="margin-top:8px;padding:8px 14px;border-radius:8px;background:var(--soft);font-size:.82rem;color:var(--muted)"><span class="spinner"></span> Hämtar AI-bedömning...</div>`;
+        }
+      }
+      return `<div class="review-card ${cls}" id="review-card-${a.qId}">
+        <div class="review-subject">${q.subject} · ${sl}</div>
+        <div class="review-q">${q.text}</div>
+        <div class="review-answer">Ditt svar: <span>${a.answer}</span></div>
+        ${a.komplettering?`<div class="review-komplettering"><strong>Din komplettering</strong>${a.komplettering}</div>`:''}
+        ${aiHtml}
+      </div>`;
+    }).join('');
+  }
+
+  buildReviewList();
+
+  // Uppdatera AI-korten när svaren kommer in
+  const aiAnswers=answers.filter(a=>a._aiPromise);
+  if(aiAnswers.length>0){
+    Promise.all(aiAnswers.map(a=>a._aiPromise.then(()=>{
+      const pending=document.getElementById(`ai-pending-${a.qId}`);
+      if(pending)buildReviewList();
+    })));
+  }
 
   // Visa detaljerade svar först
   showScreen('doneScreen');
