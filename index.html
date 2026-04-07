@@ -636,16 +636,14 @@ async function setSelfAssess(level,btn){
 function setSelfAssessSimple(score,type,btn){
   const q=quizData.questions[currentQ];
   const total=quizData.questions.length;
-  document.querySelectorAll('.sa-btn').forEach(b=>b.onclick=null);
+  document.querySelectorAll('.sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
   btn.classList.add({right:'sel-a',partial:'sel-c',wrong:'sel-wrong'}[type]||'sel-wrong');
   const ex=answers.findIndex(a=>a.qId===q.id&&a.type==='open');if(ex>-1)answers.splice(ex,1);
   answers.push({qId:q.id,type:'open',answer:pendingOpenAnswer,score,selfAssess:type,
     usedTip:tipShown[currentQ],komplettering:null,kompletteringDeclined:false,aiLevel:null,aiReason:null,aiDone:true});
   renderQuestionNav();updateFinishBtn();
-  setTimeout(()=>{
-    document.getElementById('nextBtn').style.display='';
-    document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
-  },350);
+  document.getElementById('nextBtn').style.display='';
+  document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
 }
 
 async function gradeWithAI(q,ans){
@@ -706,17 +704,23 @@ async function finishQuiz(){
   const rawScore=answers.reduce((s,a)=>s+a.score,0);
   const pct=Math.round((rawScore/total)*100);
   const elapsedSec=quizStartTime?Math.round((Date.now()-quizStartTime)/1000):null;
-  const elapsedMin=elapsedSec?Math.round(elapsedSec/60):null;
+  const elapsedMin=elapsedSec?Math.floor(elapsedSec/60):null;
+  const elapsedRemSec=elapsedSec?elapsedSec%60:null;
+  const elapsedVisning=elapsedSec!=null?`${elapsedMin} min ${elapsedRemSec} sek`:null;
+  const startTid=new Date(quizStartTime).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+  const slutTid=new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+  const tidVisning=elapsedVisning?`Startade ${startTid} · ${elapsedVisning}`:startTid;
   const cleanAnswers=answers.map(a=>{const {_aiPromise,...rest}=a;return rest;});
   const submission={student:currentStudent,week:currentWeek,score:pct,rawScore,total,
     answers:cleanAnswers,
-    timestamp:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}),
-    durationMin:elapsedMin};
+    timestamp:startTid,
+    durationMin:elapsedSec?Math.round(elapsedSec/60):null};
   submissions.push(submission);
   lockCode(currentStudent);
 
   document.getElementById('finalScore').textContent=`${pct}%`;
   document.getElementById('doneTitle').textContent=pct===100?'🏆 Perfekt!':pct>=70?'Bra jobbat! 🎉':'Klart!';
+  document.querySelector('#doneScreen .subtitle').textContent=`Inlämnat ${tidVisning}`;
   document.getElementById('reviewList').innerHTML=answers.map(a=>{
     const q=quizData.questions.find(q=>q.id===a.qId);
     const cls=a.score>=0.9?'correct-card':a.score>0?'partial-card':'wrong-card';
