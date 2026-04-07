@@ -303,6 +303,7 @@ const LEVEL_SCORES={a:1,c:0.67,e:0.33,wrong:0};
 
 let submissions=[],currentStudent=null,currentQ=0;
 let answers=[],selectedOption=null,tipShown=[],pendingOpenAnswer=null,selfAssessLocked=false;
+let quizStartTime=null;
 
 function getWeekNumber(){
   const d=new Date();d.setHours(0,0,0,0);
@@ -383,6 +384,7 @@ function startQuiz(){
   document.getElementById('codeError').textContent='';
   currentStudent=code;currentQ=0;answers=[];selectedOption=null;pendingOpenAnswer=null;selfAssessLocked=false;
   tipShown=quizData.questions.map(()=>false);
+  quizStartTime=Date.now();
   showScreen('quizScreen');renderQuestion();
 }
 
@@ -684,8 +686,14 @@ async function finishQuiz(){
   const total=quizData.questions.length;
   const rawScore=answers.reduce((s,a)=>s+a.score,0);
   const pct=Math.round((rawScore/total)*100);
+  const elapsedMin=quizStartTime?Math.round((Date.now()-quizStartTime)/60000):null;
+  const cleanAnswers=answers.map(a=>{
+    const {_aiPromise,...rest}=a;return rest;
+  });
   const submission={student:currentStudent,week:currentWeek,score:pct,rawScore,total,
-    answers:[...answers],timestamp:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})};
+    answers:cleanAnswers,
+    timestamp:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}),
+    durationMin:elapsedMin};
   submissions.push(submission);
   lockCode(currentStudent);
 
