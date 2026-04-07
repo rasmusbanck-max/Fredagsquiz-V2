@@ -202,7 +202,17 @@
   .no-results span{display:block;font-size:2rem;margin-bottom:12px;}
   .spinner{display:inline-block;width:12px;height:12px;border:2px solid #ddd;border-top-color:var(--accent2);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px;}
   @keyframes spin{to{transform:rotate(360deg);}}
-  .modal-loading{text-align:center;padding:40px;color:var(--muted);}
+  .kodord-panel{background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;}
+  .kodord-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--soft);}
+  .kodord-row:last-child{border-bottom:none;}
+  .kodord-name{font-weight:600;font-size:.9rem;display:flex;align-items:center;gap:8px;}
+  .kodord-status{font-size:.78rem;padding:3px 10px;border-radius:20px;font-weight:500;}
+  .status-used{background:#fdf0f0;color:var(--red);border:1px solid #f5b0b0;}
+  .status-free{background:#e6f7f1;color:var(--green);border:1px solid #a0d8c0;}
+  .kodord-unlock{padding:5px 12px;font-size:.78rem;border-radius:6px;border:1px solid #ddd;background:white;cursor:pointer;color:var(--muted);transition:all .15s;}
+  .kodord-unlock:hover{border-color:var(--accent);color:var(--accent);}
+  .kodord-unlock-all{padding:8px 16px;font-size:.82rem;border-radius:8px;border:2px solid var(--ink);background:white;cursor:pointer;color:var(--ink);font-weight:500;margin-top:12px;transition:all .15s;}
+  .kodord-unlock-all:hover{background:var(--ink);color:var(--paper);}
 </style>
 </head>
 <body>
@@ -252,6 +262,7 @@
       <div class="history-section" id="historySection"></div>
       <div class="sheets-status" id="sheetsStatus"></div>
       <button class="profile-done-btn" onclick="showScreen('doneScreen')">Se detaljerade svar →</button>
+      <button class="profile-done-btn" style="margin-top:10px;background:transparent;border:2px solid var(--ink);color:var(--ink);" onclick="stangSession()">Stäng och logga ut</button>
     </div>
   </div>
   <div id="doneScreen" class="screen">
@@ -261,6 +272,10 @@
       <div class="score-circle">
         <span class="score-num" id="finalScore">—</span>
         <span class="score-label">poäng</span>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-bottom:24px;">
+        <button class="btn btn-outline btn-sm" onclick="showScreen('profileScreen')">← Min profil</button>
+        <button class="btn btn-sm" onclick="stangSession()">Stäng och logga ut</button>
       </div>
       <div class="review-list" id="reviewList"></div>
     </div>
@@ -283,6 +298,8 @@
       <h2>Lärarvy</h2>
       <p class="t-subtitle" id="teacherSubtitle"></p>
       <div class="insights-grid" id="insightsGrid"></div>
+      <div class="section-title">Kodord den här veckan</div>
+      <div id="kodordPanel"></div>
       <div class="section-title">Alla inlämningar</div>
       <div class="student-table" id="studentTable"></div>
     </div>
@@ -395,12 +412,11 @@ function renderQuestionNav(){
     const isCurrent=i===currentQ;
     const isLocked=i>currentQ&&!answered;
     return `<button class="qnav-btn${isCurrent?' current':answered?' answered':isLocked?' locked':''}"
-      onclick="${isLocked?'':`jumpToQuestion(${i})`}" title="Fråga ${i+1}">${i+1}</button>`;
+      onclick="${isLocked?'':` jumpToQuestion(${i})`}" title="Fråga ${i+1}">${i+1}</button>`;
   }).join('');
 }
 
 function jumpToQuestion(idx){
-  if(idx===currentQ)return;
   const q=quizData.questions[idx];
   const alreadyAnswered=answers.some(a=>a.qId===q.id);
   if(idx>currentQ&&!alreadyAnswered)return;
@@ -500,15 +516,19 @@ function updateSelfAssess(level,btn){
   const q=quizData.questions[currentQ];
   const aIdx=answers.findIndex(a=>a.qId===q.id&&a.type==='open');
   if(aIdx>-1){answers[aIdx].selfAssess=level;answers[aIdx].score=LEVEL_SCORES[level];}
-  document.querySelectorAll('.sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
+  document.querySelectorAll('#selfAssess .sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
   btn.classList.add(`sel-${level}`);
 }
 function updateSelfAssessSimple(score,type,btn){
   const q=quizData.questions[currentQ];
   const aIdx=answers.findIndex(a=>a.qId===q.id&&a.type==='open');
   if(aIdx>-1){answers[aIdx].selfAssess=type;answers[aIdx].score=score;}
-  document.querySelectorAll('.sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
+  document.querySelectorAll('#selfAssess .sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
   btn.classList.add({right:'sel-a',partial:'sel-c',wrong:'sel-wrong'}[type]||'sel-wrong');
+}
+
+function stangSession(){
+  window.location.href='https://www.google.com';
 }
 
 function showTip(){
@@ -801,7 +821,43 @@ function mismatchDir(a){
   return null;
 }
 
+function renderKodordPanel(){
+  try{
+    const data=JSON.parse(localStorage.getItem('fq_used')||'{}');
+    const rows=APPROVED_CODES.map(code=>{
+      const used=data[code]===currentWeek;
+      return `<div class="kodord-row">
+        <div class="kodord-name">
+          ${PLANET_EMOJI[code]||'🌟'} ${code}
+          <span class="kodord-status ${used?'status-used':'status-free'}">${used?'Använt':'Ledigt'}</span>
+        </div>
+        ${used?`<button class="kodord-unlock" onclick="unlockCode('${code}')">Lås upp</button>`:''}
+      </div>`;
+    }).join('');
+    document.getElementById('kodordPanel').innerHTML=`
+      <div class="kodord-panel">${rows}</div>
+      <button class="kodord-unlock-all" onclick="unlockAllCodes()">Lås upp alla kodord</button>`;
+  }catch{}
+}
+
+function unlockCode(code){
+  try{
+    const data=JSON.parse(localStorage.getItem('fq_used')||'{}');
+    delete data[code];
+    localStorage.setItem('fq_used',JSON.stringify(data));
+    renderKodordPanel();
+  }catch{}
+}
+
+function unlockAllCodes(){
+  try{
+    localStorage.removeItem('fq_used');
+    renderKodordPanel();
+  }catch{}
+}
+
 function renderTeacherDash(){
+  renderKodordPanel();
   const n=submissions.length;
   document.getElementById('teacherSubtitle').textContent=`Vecka ${currentWeek} · ${n} inlämning${n!==1?'ar':''}`;
   const avgScore=n?Math.round(submissions.reduce((s,r)=>s+r.score,0)/n):0;
