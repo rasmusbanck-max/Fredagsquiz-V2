@@ -648,14 +648,14 @@ function setSelfAssessSimple(score,type,btn){
 
 async function gradeWithAI(q,ans){
   try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,
-        system:"Du gör en hemlig bedömning av ett elevsvar. Svara BARA med JSON utan markdown.",
-        messages:[{role:"user",content:`${q.aiRubric}\n\nFråga: ${q.text}\nElevens svar: ${ans}`}]})
+    const params=new URLSearchParams({
+      action:'grade',
+      rubric:q.aiRubric,
+      question:q.text,
+      answer:ans
     });
-    const d=await r.json();
-    const raw=d.content.find(b=>b.type==='text')?.text||'{}';
+    const res=await fetch(`${SHEETS_URL}?${params.toString()}`);
+    const raw=await res.text();
     return JSON.parse(raw.replace(/```json|```/g,'').trim());
   }catch{return{level:null,reason:null};}
 }
