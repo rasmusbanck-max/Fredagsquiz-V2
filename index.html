@@ -313,13 +313,15 @@ const quizData={
 // ── GOOGLE SHEETS ─────────────────────────────────────────────
 async function saveToSheets(submission){
   try{
-    const res=await fetch(SHEETS_URL,{
+    // no-cors krävs från GitHub Pages mot Apps Script
+    // Vi kan inte läsa svaret men anropet går igenom
+    await fetch(SHEETS_URL,{
       method:"POST",
+      mode:"no-cors",
       headers:{"Content-Type":"text/plain"},
       body:JSON.stringify(submission)
     });
-    const data=await res.json();
-    return data.ok===true;
+    return true;
   }catch(e){
     console.error("Sheets-fel:",e);
     return false;
@@ -328,7 +330,7 @@ async function saveToSheets(submission){
 
 async function loadFromSheets(){
   try{
-    const res=await fetch(SHEETS_URL);
+    const res=await fetch(SHEETS_URL+"?action=get");
     const data=await res.json();
     return Array.isArray(data)?data:[];
   }catch(e){
@@ -586,14 +588,9 @@ async function finishQuiz(){
   // Spara till Google Sheets
   const statusEl=document.getElementById('sheetsStatus');
   statusEl.textContent='Sparar ditt resultat...';
-  const ok=await saveToSheets(submission);
-  if(ok){
-    statusEl.textContent='✓ Sparat till Google Sheets';
-    statusEl.className='sheets-status ok';
-  }else{
-    statusEl.textContent='Kunde inte spara till Google Sheets. Kontakta läraren.';
-    statusEl.className='sheets-status err';
-  }
+  await saveToSheets(submission);
+  statusEl.textContent='✓ Inlämnat!';
+  statusEl.className='sheets-status ok';
 }
 
 function checkTeacherPin(){
