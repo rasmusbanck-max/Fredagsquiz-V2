@@ -246,7 +246,7 @@
       <div id="qAnswerArea"></div>
       <div class="feedback-box" id="feedbackBox"></div>
       <div class="nav-row">
-        <button class="btn btn-outline btn-sm" id="finishBtn" onclick="finishQuiz()" style="display:none">Avsluta quiz →</button>
+        <div></div>
         <div class="nav-row-right">
           <button class="btn btn-outline" id="submitBtn" onclick="submitAnswer()">Svara</button>
           <button class="btn" id="nextBtn" onclick="nextQuestion()" style="display:none">Nästa →</button>
@@ -367,7 +367,8 @@ const quizData={week:currentWeek,questions:[
   {id:4,subject:"Matematik",type:"open",useLevels:false,
     text:"Lisa cyklar 3 km på 12 minuter. Hur lång tid tar det henne att cykla 10 km? Visa hur du tänker.",
     tip:"Börja med att räkna ut hur lång tid det tar per kilometer.",
-    facit:"3 km på 12 min → 1 km tar 4 min. 10 km × 4 min = 40 minuter."},
+    facit:"3 km på 12 min → 1 km tar 4 min. 10 km × 4 min = 40 minuter.",
+    aiRubric:"Rätt svar är 40 minuter. Bedöm elevsvaret: 'a'=rätt svar med tydligt resonemang, 'c'=rätt svar men utan tydligt resonemang eller med räknesteg som saknas, 'e'=delvis rätt men fel svar eller metod, 'wrong'=fel svar eller inget försök. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\"}"},
   {id:5,subject:"Svenska",type:"multiple",
     text:"Vilket ord är ett substantiv?",
     options:["Snabbt","Springa","Träd","Grön"],correct:2,
@@ -426,8 +427,7 @@ function jumpToQuestion(idx){
 }
 
 function updateFinishBtn(){
-  const allAnswered=quizData.questions.every(q=>answers.some(a=>a.qId===q.id));
-  document.getElementById('finishBtn').style.display=allAnswered?'':'none';
+  // Avsluta-knappen är borttagen från quizScreen, finns bara på profilsidan
 }
 
 function renderQuestion(){
@@ -616,10 +616,19 @@ async function setSelfAssess(level,btn){
     usedTip:tipShown[currentQ],komplettering:null,kompletteringDeclined:false,aiLevel:null,aiReason:null,aiDone:false};
   answers.push(aObj);
   if(q.aiRubric){
-    aObj._aiPromise=gradeWithAI(q,pendingOpenAnswer).then(r=>{aObj.aiLevel=r.level;aObj.aiReason=r.reason;aObj.aiDone=true;});
+    aObj._aiPromise=gradeWithAI(q,pendingOpenAnswer).then(r=>{
+      aObj.aiLevel=r.level;aObj.aiReason=r.reason;aObj.aiDone=true;
+      // Lås upp Se resultat-knappen om vi är på sista frågan
+      const nextBtn=document.getElementById('nextBtn');
+      if(nextBtn&&nextBtn.dataset.waiting==='ai'){
+        nextBtn.disabled=false;
+        nextBtn.innerHTML='Se resultat';
+        nextBtn.dataset.waiting='';
+        nextBtn.style.opacity='';
+      }
+    });
   }else{aObj.aiDone=true;}
   renderQuestionNav();updateFinishBtn();
-  // Visa kompletteringserbjudande bara en gång
   if(!selfAssessLocked){
     selfAssessLocked=true;
     setTimeout(()=>{
@@ -638,15 +647,26 @@ async function setSelfAssess(level,btn){
 
 function setSelfAssessSimple(score,type,btn){
   const q=quizData.questions[currentQ];
-  const total=quizData.questions.length;
   document.querySelectorAll('.sa-btn').forEach(b=>b.classList.remove('sel-a','sel-c','sel-e','sel-wrong'));
   btn.classList.add({right:'sel-a',partial:'sel-c',wrong:'sel-wrong'}[type]||'sel-wrong');
   const ex=answers.findIndex(a=>a.qId===q.id&&a.type==='open');if(ex>-1)answers.splice(ex,1);
-  answers.push({qId:q.id,type:'open',answer:pendingOpenAnswer,score,selfAssess:type,
-    usedTip:tipShown[currentQ],komplettering:null,kompletteringDeclined:false,aiLevel:null,aiReason:null,aiDone:true});
+  const aObj={qId:q.id,type:'open',answer:pendingOpenAnswer,score,selfAssess:type,
+    usedTip:tipShown[currentQ],komplettering:null,kompletteringDeclined:false,aiLevel:null,aiReason:null,aiDone:false};
+  if(q.aiRubric){
+    aObj._aiPromise=gradeWithAI(q,pendingOpenAnswer).then(r=>{
+      aObj.aiLevel=r.level;aObj.aiReason=r.reason;aObj.aiDone=true;
+      const nextBtn=document.getElementById('nextBtn');
+      if(nextBtn&&nextBtn.dataset.waiting==='ai'){
+        nextBtn.disabled=false;
+        nextBtn.innerHTML='Se resultat';
+        nextBtn.dataset.waiting='';
+        nextBtn.style.opacity='';
+      }
+    });
+  }else{aObj.aiDone=true;}
+  answers.push(aObj);
   renderQuestionNav();updateFinishBtn();
-  document.getElementById('nextBtn').style.display='';
-  document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
+  visaNextEllerVanta();
 }
 
 async function gradeWithAI(q,ans){
@@ -685,19 +705,34 @@ function sparaKomplettering(qId){
   if(aIdx>-1)answers[aIdx].komplettering=text;
   document.getElementById('kompletteraForm').remove();
   document.getElementById('qAnswerArea').innerHTML+=`<div class="komplettera-done">✓ Komplettering sparad!</div>`;
-  const total=quizData.questions.length;
-  setTimeout(()=>{
-    document.getElementById('nextBtn').style.display='';
-    document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
-  },300);
+  visaNextEllerVanta();
 }
 function neka(qId){
   const aIdx=answers.findIndex(a=>a.qId===qId&&a.type==='open');
   if(aIdx>-1)answers[aIdx].kompletteringDeclined=true;
   document.getElementById('kompletteraOffer').remove();
+  visaNextEllerVanta();
+}
+function visaNextEllerVanta(){
   const total=quizData.questions.length;
-  document.getElementById('nextBtn').style.display='';
-  document.getElementById('nextBtn').textContent=currentQ<total-1?'Nästa →':'Se resultat';
+  const nextBtn=document.getElementById('nextBtn');
+  nextBtn.style.display='';
+  if(currentQ<total-1){
+    nextBtn.textContent='Nästa →';
+    nextBtn.disabled=false;
+  }else{
+    const aObj=answers.find(a=>a._aiPromise&&!a.aiDone);
+    if(aObj){
+      nextBtn.innerHTML='⏳ AI tänker...';
+      nextBtn.disabled=true;
+      nextBtn.dataset.waiting='ai';
+      nextBtn.style.opacity='.6';
+    }else{
+      nextBtn.innerHTML='Se resultat';
+      nextBtn.disabled=false;
+      nextBtn.style.opacity='';
+    }
+  }
 }
 
 function nextQuestion(){
