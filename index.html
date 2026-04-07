@@ -655,10 +655,15 @@ async function gradeWithAI(q,ans){
     url.searchParams.set('rubric',q.aiRubric);
     url.searchParams.set('question',q.text);
     url.searchParams.set('answer',ans);
+    console.log('AI-anrop skickas till:',url.toString());
     const res=await fetch(url.toString());
     const raw=await res.text();
+    console.log('AI-svar:',raw);
     return JSON.parse(raw.replace(/```json|```/g,'').trim());
-  }catch{return{level:null,reason:null};}
+  }catch(err){
+    console.error('AI-fel:',err);
+    return{level:null,reason:null};
+  }
 }
 
 function visaKompletteraFalt(qId){
