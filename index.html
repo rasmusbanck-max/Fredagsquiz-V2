@@ -260,9 +260,7 @@
       <div class="profile-grid" id="profileGrid"></div>
       <div class="subject-bars" id="subjectBars"></div>
       <div class="history-section" id="historySection"></div>
-      <div class="sheets-status" id="sheetsStatus"></div>
-      <button class="profile-done-btn" onclick="showScreen('doneScreen')">Se detaljerade svar →</button>
-      <button class="profile-done-btn" style="margin-top:10px;background:transparent;border:2px solid var(--ink);color:var(--ink);" onclick="stangSession()">Stäng och logga ut</button>
+      <button class="profile-done-btn" onclick="stangSession()">Stäng och logga ut</button>
     </div>
   </div>
   <div id="doneScreen" class="screen">
@@ -273,8 +271,9 @@
         <span class="score-num" id="finalScore">—</span>
         <span class="score-label">poäng</span>
       </div>
-      <div style="display:flex;gap:10px;justify-content:center;margin-bottom:24px;">
-        <button class="btn btn-outline btn-sm" onclick="showScreen('profileScreen')">← Min profil</button>
+      <div class="sheets-status" id="sheetsStatus"></div>
+      <div style="display:flex;gap:10px;justify-content:center;margin:20px 0;">
+        <button class="btn btn-outline btn-sm" onclick="showScreen('profileScreen')">Min profil →</button>
         <button class="btn btn-sm" onclick="stangSession()">Stäng och logga ut</button>
       </div>
       <div class="review-list" id="reviewList"></div>
@@ -706,10 +705,9 @@ async function finishQuiz(){
   const total=quizData.questions.length;
   const rawScore=answers.reduce((s,a)=>s+a.score,0);
   const pct=Math.round((rawScore/total)*100);
-  const elapsedMin=quizStartTime?Math.round((Date.now()-quizStartTime)/60000):null;
-  const cleanAnswers=answers.map(a=>{
-    const {_aiPromise,...rest}=a;return rest;
-  });
+  const elapsedSec=quizStartTime?Math.round((Date.now()-quizStartTime)/1000):null;
+  const elapsedMin=elapsedSec?Math.round(elapsedSec/60):null;
+  const cleanAnswers=answers.map(a=>{const {_aiPromise,...rest}=a;return rest;});
   const submission={student:currentStudent,week:currentWeek,score:pct,rawScore,total,
     answers:cleanAnswers,
     timestamp:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}),
@@ -731,9 +729,13 @@ async function finishQuiz(){
     </div>`;
   }).join('');
 
-  renderProfileScreen(submission,pct);
-  showScreen('profileScreen');
+  // Visa detaljerade svar först
+  showScreen('doneScreen');
 
+  // Bygg profilen i bakgrunden
+  renderProfileScreen(submission,pct);
+
+  // Spara till Sheets
   const statusEl=document.getElementById('sheetsStatus');
   statusEl.textContent='Sparar...';
   await saveToSheets(submission);
