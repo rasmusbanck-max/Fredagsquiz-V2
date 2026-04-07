@@ -260,7 +260,10 @@
       <div class="profile-grid" id="profileGrid"></div>
       <div class="subject-bars" id="subjectBars"></div>
       <div class="history-section" id="historySection"></div>
-      <button class="profile-done-btn" onclick="stangSession()">Stäng och logga ut</button>
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button class="profile-done-btn" style="background:transparent;border:2px solid var(--ink);color:var(--ink);" onclick="showScreen('doneScreen')">← Mina svar</button>
+        <button class="profile-done-btn" onclick="stangSession()">Stäng och logga ut</button>
+      </div>
     </div>
   </div>
   <div id="doneScreen" class="screen">
@@ -405,13 +408,12 @@ function startQuiz(){
 }
 
 function renderQuestionNav(){
-  const total=quizData.questions.length;
   document.getElementById('questionNav').innerHTML=quizData.questions.map((_,i)=>{
     const answered=answers.some(a=>a.qId===quizData.questions[i].id);
     const isCurrent=i===currentQ;
     const isLocked=i>currentQ&&!answered;
-    return `<button class="qnav-btn${isCurrent?' current':answered?' answered':isLocked?' locked':''}"
-      onclick="${isLocked?'':` jumpToQuestion(${i})`}" title="Fråga ${i+1}">${i+1}</button>`;
+    const cls=isCurrent?'current':answered?'answered':isLocked?'locked':'';
+    return `<button class="qnav-btn ${cls}" ${isLocked?'disabled':''} onclick="jumpToQuestion(${i})" title="Fråga ${i+1}">${i+1}</button>`;
   }).join('');
 }
 
@@ -648,13 +650,12 @@ function setSelfAssessSimple(score,type,btn){
 
 async function gradeWithAI(q,ans){
   try{
-    const params=new URLSearchParams({
-      action:'grade',
-      rubric:q.aiRubric,
-      question:q.text,
-      answer:ans
-    });
-    const res=await fetch(`${SHEETS_URL}?${params.toString()}`);
+    const url=new URL(SHEETS_URL);
+    url.searchParams.set('action','grade');
+    url.searchParams.set('rubric',q.aiRubric);
+    url.searchParams.set('question',q.text);
+    url.searchParams.set('answer',ans);
+    const res=await fetch(url.toString());
     const raw=await res.text();
     return JSON.parse(raw.replace(/```json|```/g,'').trim());
   }catch{return{level:null,reason:null};}
