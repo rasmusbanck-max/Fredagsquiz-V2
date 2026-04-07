@@ -165,6 +165,9 @@
   .spinner{display:inline-block;width:12px;height:12px;border:2px solid #ddd;border-top-color:var(--accent2);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .modal-loading{text-align:center;padding:40px;color:var(--muted);}
+  .sheets-status{font-size:.78rem;color:var(--muted);margin-top:8px;min-height:16px;}
+  .sheets-status.ok{color:var(--green);}
+  .sheets-status.err{color:var(--red);}
 </style>
 </head>
 <body>
@@ -210,6 +213,7 @@
         <span class="score-num" id="finalScore">—</span>
         <span class="score-label">poäng</span>
       </div>
+      <div class="sheets-status" id="sheetsStatus"></div>
       <div class="review-list" id="reviewList"></div>
     </div>
   </div>
@@ -224,7 +228,6 @@
         <button class="btn" onclick="checkTeacherPin()">Logga in</button>
       </div>
       <div class="error-msg" id="pinError"></div>
-      <p style="margin-top:20px;font-size:.8rem;color:var(--muted)">(Demokod: <strong>LARARE</strong>)</p>
     </div>
   </div>
   <div id="teacherDashScreen" class="screen">
@@ -242,7 +245,17 @@
 </div>
 
 <script>
-const TEACHER_PIN="LARARE";
+// ── KONFIGURATION ──────────────────────────────────────────────
+const SHEETS_URL = "https://script.google.com/a/macros/franskaelever.se/s/AKfycbygztzJ2wsC6ZyJ3VhidQOqqFbk4ei8qXOR_yz_hAUpZ0Hg4YDHiX0HR3DMOYB5i-Oh/exec";
+const TEACHER_PIN = "LARARE";
+
+// Godkända kodord – ett per elev, dela ut dessa i klassen
+const APPROVED_CODES = [
+  "MERKURIUS","VENUS","MARS","JUPITER","SATURNUS",
+  "URANUS","NEPTUNUS","PLUTO","MÅNEN","TITAN"
+];
+// ──────────────────────────────────────────────────────────────
+
 const LEVEL_ORDER=['wrong','e','c','a'];
 const LEVEL_LABELS={a:"Välutvecklat",c:"Utvecklat",e:"Godkänt",wrong:"Hade fel"};
 const LEVEL_SCORES={a:1,c:0.67,e:0.33,wrong:0};
@@ -297,6 +310,34 @@ const quizData={
   ]
 };
 
+// ── GOOGLE SHEETS ─────────────────────────────────────────────
+async function saveToSheets(submission){
+  try{
+    const res=await fetch(SHEETS_URL,{
+      method:"POST",
+      headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify(submission)
+    });
+    const data=await res.json();
+    return data.ok===true;
+  }catch(e){
+    console.error("Sheets-fel:",e);
+    return false;
+  }
+}
+
+async function loadFromSheets(){
+  try{
+    const res=await fetch(SHEETS_URL);
+    const data=await res.json();
+    return Array.isArray(data)?data:[];
+  }catch(e){
+    console.error("Sheets-fel:",e);
+    return [];
+  }
+}
+// ─────────────────────────────────────────────────────────────
+
 function showMode(mode){
   document.getElementById('tabStudent').classList.toggle('active',mode==='student');
   document.getElementById('tabTeacher').classList.toggle('active',mode==='teacher');
@@ -310,6 +351,10 @@ function showTeacherScreen(id){document.querySelectorAll('#teacherFlow .screen')
 function startQuiz(){
   const code=document.getElementById('codeInput').value.trim().toUpperCase();
   if(!code){document.getElementById('codeError').textContent='Ange ditt kodord.';return;}
+  if(!APPROVED_CODES.includes(code)){
+    document.getElementById('codeError').textContent='Okänt kodord. Kolla med din lärare.';
+    return;
+  }
   document.getElementById('codeError').textContent='';
   currentStudent=code;currentQ=0;answers=[];selectedOption=null;pendingOpenAnswer=null;
   tipShown=quizData.questions.map(()=>false);
@@ -507,12 +552,21 @@ function nextQuestion(){
   if(currentQ>=quizData.questions.length)finishQuiz();
   else{selectedOption=null;pendingOpenAnswer=null;renderQuestion();}
 }
-function finishQuiz(){
+
+async function finishQuiz(){
   const total=quizData.questions.length;
   const rawScore=answers.reduce((s,a)=>s+a.score,0);
   const pct=Math.round((rawScore/total)*100);
-  submissions.push({student:currentStudent,week:currentWeek,score:pct,rawScore,total,answers:[...answers],
-    timestamp:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})});
+  const submission={
+    student:currentStudent,
+    week:currentWeek,
+    score:pct,
+    rawScore,
+    total,
+    answers:[...answers],
+    timestamp:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})
+  };
+  submissions.push(submission);
   document.getElementById('finalScore').textContent=`${pct}%`;
   document.getElementById('doneTitle').textContent=pct===100?'🏆 Perfekt!':pct>=70?'Bra jobbat! 🎉':'Klart!';
   document.getElementById('progressBar').style.width='100%';
@@ -528,15 +582,45 @@ function finishQuiz(){
     </div>`;
   }).join('');
   showScreen('doneScreen');
+
+  // Spara till Google Sheets
+  const statusEl=document.getElementById('sheetsStatus');
+  statusEl.textContent='Sparar ditt resultat...';
+  const ok=await saveToSheets(submission);
+  if(ok){
+    statusEl.textContent='✓ Sparat till Google Sheets';
+    statusEl.className='sheets-status ok';
+  }else{
+    statusEl.textContent='Kunde inte spara till Google Sheets. Kontakta läraren.';
+    statusEl.className='sheets-status err';
+  }
 }
 
 function checkTeacherPin(){
   const pin=document.getElementById('teacherPinInput').value.trim().toUpperCase();
-  if(pin===TEACHER_PIN){document.getElementById('pinError').textContent='';showTeacherScreen('teacherDashScreen');renderTeacherDash();}
-  else document.getElementById('pinError').textContent='Fel kod, försök igen.';
+  if(pin===TEACHER_PIN){
+    document.getElementById('pinError').textContent='';
+    showTeacherScreen('teacherDashScreen');
+    loadTeacherDash();
+  }else{
+    document.getElementById('pinError').textContent='Fel kod, försök igen.';
+  }
 }
 
-// Returnerar null, 'over1', 'over2', 'under1', 'under2'
+async function loadTeacherDash(){
+  document.getElementById('studentTable').innerHTML=`<div class="no-results"><span class="spinner"></span> Hämtar från Google Sheets...</div>`;
+  document.getElementById('insightsGrid').innerHTML='';
+  document.getElementById('teacherSubtitle').textContent='Laddar...';
+  const sheetsData=await loadFromSheets();
+  // Slå ihop med eventuella lokala inlämningar från samma session
+  sheetsData.forEach(s=>{
+    if(!submissions.find(x=>x.student===s.student&&x.week===s.week&&x.timestamp===s.timestamp)){
+      submissions.push(s);
+    }
+  });
+  renderTeacherDash();
+}
+
 function mismatchDir(a){
   if(!a.aiLevel||!a.selfAssess)return null;
   const selfKey=a.selfAssess==='right'?'a':a.selfAssess==='partial'?'c':a.selfAssess==='wrong'?'wrong':a.selfAssess;
@@ -555,19 +639,18 @@ function renderTeacherDash(){
   const n=submissions.length;
   document.getElementById('teacherSubtitle').textContent=`Vecka ${currentWeek} · ${n} inlämning${n!==1?'ar':''}`;
   const avgScore=n?Math.round(submissions.reduce((s,r)=>s+r.score,0)/n):0;
-  const kompCount=n?submissions.reduce((s,sub)=>s+sub.answers.filter(a=>a.komplettering).length,0):0;
-  const mismatchCount=n?submissions.reduce((s,sub)=>s+sub.answers.filter(a=>mismatchDir(a)).length,0):0;
+  const mismatchCount=n?submissions.reduce((s,sub)=>s+(sub.answers||[]).filter(a=>mismatchDir(a)).length,0):0;
   document.getElementById('insightsGrid').innerHTML=`
     <div class="insight-card"><div class="card-label">Inlämnat</div><div class="card-value">${n}</div><div class="card-sub">elever</div></div>
     <div class="insight-card"><div class="card-label">Snittscore</div><div class="card-value">${n?avgScore+'%':'—'}</div><div class="card-sub">av klassen</div></div>
     <div class="insight-card"><div class="card-label">Självbed. avviker</div><div class="card-value">${mismatchCount}</div><div class="card-sub">fall totalt</div></div>`;
   const tableEl=document.getElementById('studentTable');
   if(!n){tableEl.innerHTML=`<div class="no-results" style="padding:40px"><span>📋</span>Inga inlämningar än.</div>`;return;}
-  tableEl.innerHTML=`<table><thead><tr><th>Kodord</th><th>Tid</th><th>Score</th><th>Flaggor</th><th></th></tr></thead>
+  tableEl.innerHTML=`<table><thead><tr><th>Kodord</th><th>Vecka</th><th>Tid</th><th>Score</th><th>Flaggor</th><th></th></tr></thead>
     <tbody>${submissions.map((s,i)=>{
       const cls=s.score>=70?'score-high':s.score>=40?'score-mid':'score-low';
       const chips=[];
-      s.answers.forEach(a=>{
+      (s.answers||[]).forEach(a=>{
         const q=quizData.questions.find(q=>q.id===a.qId);
         if(a.usedTip)chips.push(`<span class="flag-chip chip-tip">💡 tips</span>`);
         if(a.komplettering)chips.push(`<span class="flag-chip chip-komp">✏ kompletterade</span>`);
@@ -580,6 +663,7 @@ function renderTeacherDash(){
       });
       return `<tr class="clickable" onclick="openStudentModal(${i})">
         <td><strong>${s.student}</strong></td>
+        <td style="color:var(--muted);font-size:.85rem">v.${s.week}</td>
         <td style="color:var(--muted);font-size:.85rem">${s.timestamp}</td>
         <td><span class="score-pill ${cls}">${s.score}%</span></td>
         <td>${chips.length?chips.join(''):'<span style="color:var(--muted);font-size:.82rem">inga</span>'}</td>
@@ -599,8 +683,9 @@ async function openStudentModal(idx){
     const live=answers.find(a=>a.qId===sa.qId&&a.type===sa.type);
     if(live){sa.aiLevel=live.aiLevel??null;sa.aiReason=live.aiReason??null;sa.aiDone=live.aiDone;}
   });
-  const rows=sub.answers.map(a=>{
+  const rows=(sub.answers||[]).map(a=>{
     const q=quizData.questions.find(q=>q.id===a.qId);
+    if(!q)return'';
     const scoreLabel=a.score>=0.9?'✓ Rätt':a.score>0?'Delvis':'✗ Fel';
     const color=a.score>=0.9?'var(--green)':a.score>0?'#e08020':'var(--red)';
     let flagHtml='';
