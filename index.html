@@ -1215,6 +1215,7 @@ function renderAmnesQuizFraga(){
 function svaraFlerval(idx){
   const q=aq.fragor[aq.index];
   const ratt=idx===q.ratt;
+  q._ratt=ratt;
   if(ratt)aq.ratt++;else aq.fel++;
   document.querySelectorAll('[id^="alt"]').forEach((b,i)=>{
     b.onclick=null;
@@ -1228,6 +1229,7 @@ function svaraFlerval(idx){
 function svaraSantFalskt(svar){
   const q=aq.fragor[aq.index];
   const ratt=svar===q.ratt;
+  q._ratt=ratt;
   if(ratt)aq.ratt++;else aq.fel++;
   document.getElementById('santBtn').onclick=null;
   document.getElementById('falsktBtn').onclick=null;
@@ -1254,6 +1256,7 @@ function toggleMulti(idx){
 function svaraMulti(){
   const q=aq.fragor[aq.index];
   const ratt=JSON.stringify([...aq.multiVal].sort())===JSON.stringify([...q.ratt].sort());
+  q._ratt=ratt;
   if(ratt)aq.ratt++;else aq.fel++;
   q.alternativ.forEach((_,i)=>{
     const btn=document.getElementById(`multi${i}`);
@@ -1274,6 +1277,7 @@ async function svaraOppet(){
   if(btn){btn.disabled=true;btn.textContent='⏳ AI bedömer...';}
   const result=await gradeWithAI(q,text);
   const ratt=result.level&&result.level!=='wrong';
+  q._ratt=ratt;
   if(ratt)aq.ratt++;else aq.fel++;
   const nivaLabel={a:'Välutvecklat',c:'Utvecklat',e:'Godkänt',wrong:'Inte riktigt'}[result.level||'wrong'];
   visaAqFeedback(ratt,`AI: ${nivaLabel}${result.reason?` · ${result.reason}`:''}`);
@@ -1289,6 +1293,17 @@ function visaAqFeedback(ratt,extra){
 }
 
 function sparaAmnesResultat(){
+  const fragaData=aq.fragor.map(f=>({
+    fraga:f.fraga,
+    ratt:f.typ==='flerval'?(aq.fragor.indexOf(f)>=0):false, // sätts nedan
+    typ:f.typ
+  }));
+  // Bygg korrekt per-fråga-data från svarshistoriken
+  const fragorMedSvar=aq.fragor.map(f=>({
+    fraga:f.fraga.length>80?f.fraga.slice(0,80)+'…':f.fraga,
+    typ:f.typ,
+    ratt:f._ratt||false
+  }));
   const ovning={
     amne:aq.amne,
     datum:new Date().toLocaleDateString('sv-SE'),
@@ -1296,7 +1311,8 @@ function sparaAmnesResultat(){
     typ:'ämnesquiz',
     antal:aq.fragor.length,
     ratt:aq.ratt,
-    pct:Math.round((aq.ratt/aq.fragor.length)*100)
+    pct:Math.round((aq.ratt/aq.fragor.length)*100),
+    fragor:fragorMedSvar
   };
   ovningHistory.unshift(ovning);
   saveOvningToSheets(ovning);
@@ -2026,8 +2042,11 @@ function renderTeacherDash(){
     .slice(0,5);
   const svEl=document.getElementById('svaragteFragor');
   if(svEl){
-    svEl.innerHTML=svarasteFragor.length
-      ? `<div style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;">
+    // Svåraste från fredagsquiz
+    let svHtml='';
+    if(svarasteFragor.length){
+      svHtml+=`<div style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">Fredagsquiz</div>
+        <div style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:14px;">
           ${svarasteFragor.map(d=>{
             const col=d.felPct>=70?'var(--red)':d.felPct>=40?'#e08020':'var(--green)';
             return `<div style="padding:8px 0;border-bottom:1px solid var(--soft);">
@@ -2041,8 +2060,48 @@ function renderTeacherDash(){
               <div style="font-size:.72rem;color:var(--muted);margin-top:3px;">${d.ratt} rätt · ${d.fel} fel av ${d.ratt+d.fel} elever</div>
             </div>`;
           }).join('')}
-        </div>`
-      : `<div style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;color:var(--muted);font-size:.88rem;">Visas när elever gjort fredagsquiz.</div>`;
+        </div>`;
+    }
+
+    // Svåraste från övningar
+    const allOvnFragor={};
+    (window._lararOvningar||[]).forEach(o=>{
+      (o.fragor||[]).forEach(f=>{
+        const key=f.fraga;
+        if(!allOvnFragor[key])allOvnFragor[key]={fraga:f.fraga,typ:f.typ,amne:o.amne,ratt:0,fel:0};
+        if(f.ratt)allOvnFragor[key].ratt++;
+        else allOvnFragor[key].fel++;
+      });
+    });
+    const svarasteOvn=Object.values(allOvnFragor)
+      .filter(d=>d.ratt+d.fel>=2)
+      .map(d=>({...d,felPct:Math.round((d.fel/(d.ratt+d.fel))*100)}))
+      .sort((a,b)=>b.felPct-a.felPct)
+      .slice(0,5);
+
+    if(svarasteOvn.length){
+      svHtml+=`<div style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">Övningar</div>
+        <div style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:14px;">
+          ${svarasteOvn.map(d=>{
+            const col=d.felPct>=70?'var(--red)':d.felPct>=40?'#e08020':'var(--green)';
+            return `<div style="padding:8px 0;border-bottom:1px solid var(--soft);">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+                <div style="font-size:.82rem;font-weight:600;">${d.amne} – ${d.fraga.length>60?d.fraga.slice(0,60)+'…':d.fraga}</div>
+                <div style="font-weight:700;color:${col};flex-shrink:0;">${d.felPct}% fel</div>
+              </div>
+              <div style="height:6px;background:var(--soft);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:${d.felPct}%;background:${col};border-radius:3px;"></div>
+              </div>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:3px;">${d.ratt} rätt · ${d.fel} fel av ${d.ratt+d.fel} svar</div>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }
+
+    if(!svHtml){
+      svHtml=`<div style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;color:var(--muted);font-size:.88rem;">Visas när elever gjort quiz eller övningar.</div>`;
+    }
+    svEl.innerHTML=svHtml;
   }
 
   // Övningar per elev – separat tabell ovanför inlämningar
