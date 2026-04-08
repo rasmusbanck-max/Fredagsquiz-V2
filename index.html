@@ -560,6 +560,8 @@ const quizData={week:currentWeek,questions:[
 ]};
 
 // ── SHEETS ──────────────────────────────────────────────────
+let ovningHistory=[];
+
 async function saveToSheets(s){
   try{await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(s)});return true;}
   catch{return false;}
@@ -585,6 +587,21 @@ async function loadMalFromSheets(){
     const r=await fetch(url.toString());
     return await r.json();
   }catch{return{};}
+}
+async function loadOvningHistory(){
+  try{
+    const url=new URL(SHEETS_URL);
+    url.searchParams.set('action','getOvningar');
+    url.searchParams.set('kodord',currentStudent);
+    const r=await fetch(url.toString());
+    return await r.json();
+  }catch{return[];}
+}
+async function saveOvningToSheets(ovning){
+  try{
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:'saveOvning',kodord:currentStudent,ovning})});
+  }catch{}
 }
 async function saveMalToSheets(){
   try{
@@ -631,10 +648,11 @@ async function initElevApp(){
   document.getElementById('hemEmoji').textContent=emoji;
   document.getElementById('hemGreeting').textContent=`Hej, ${currentStudent}!`;
 
-  // Ladda historik och mål parallellt
-  const [hist,mal]=await Promise.all([loadElevHistory(),loadMalFromSheets()]);
+  // Ladda historik, mål och övningar parallellt
+  const [hist,mal,ovn]=await Promise.all([loadElevHistory(),loadMalFromSheets(),loadOvningHistory()]);
   elevHistory=hist||[];
   malData=mal||{};
+  ovningHistory=ovn||[];
 
   renderHem();
   renderProfil();
@@ -741,18 +759,15 @@ function renderProfil(){
       </div>`).join('')}
     </div>`:''}
     ${(()=>{
-      let mathHist=[];
-      try{mathHist=JSON.parse(localStorage.getItem(`fq_math_${currentStudent}`)||'[]');}catch{}
-      if(!mathHist.length)return'';
-      const typLabel={gang:'×',division:'÷',bada:'× ÷'};
+      if(!ovningHistory.length)return'';
       return `<div class="section-card">
         <h3>Senaste övningar</h3>
-        ${mathHist.slice(0,8).map(h=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--soft);">
+        ${ovningHistory.slice(0,10).map(h=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--soft);">
           <div style="flex:1;">
-            <div style="font-size:.85rem;font-weight:500;">${typLabel[h.typ]||''} Tabell ${h.tabeller.join(', ')} · ${h.antal} frågor</div>
+            <div style="font-size:.85rem;font-weight:500;">${h.amne} · ${h.antal} frågor</div>
             <div style="font-size:.75rem;color:var(--muted);">${h.datum} ${h.tid}</div>
           </div>
-          <div style="font-family:'Fraunces',serif;font-weight:700;color:${h.pct>=80?'var(--green)':h.pct>=60?'#e08020':'var(--red)'};">${h.ratt}/${h.antal}</div>
+          <div style="font-family:'Fraunces',serif;font-weight:700;color:${(h.pct||0)>=80?'var(--green)':(h.pct||0)>=60?'#e08020':'var(--red)'};">${h.ratt}/${h.antal}</div>
         </div>`).join('')}
       </div>`;
     })()}`;
@@ -873,63 +888,387 @@ function visaProfil(){
   renderProfil();
 }
 
-// ── ÖVNINGAR / MATHQUIZ ──────────────────────────────────────
+// ── ÖVNINGAR ─────────────────────────────────────────────────
+let aktivtOvningAmne='Matematik';
 let mq={aktiv:false,fragor:[],index:0,ratt:0,fel:0,installningar:null};
+let aq={aktiv:false,amne:'',fragor:[],index:0,ratt:0,fel:0,multiVal:[],openSvar:null};
+
+// ── FRÅGBANKER ────────────────────────────────────────────────
+const SO_FRAGOR=[
+  {typ:"flerval",fraga:"Hur många ledamöter finns det i Sveriges riksdag?",alternativ:["249","349","449","549"],ratt:1},
+  {typ:"flerval",fraga:"Hur ofta hålls val till riksdagen i Sverige?",alternativ:["Vart tredje år","Vart fjärde år","Vart femte år","Vart sjätte år"],ratt:1},
+  {typ:"flerval",fraga:"Vad kallas riksdagens ordförande?",alternativ:["Statsministern","Talmannen","Presidenten","Kungen"],ratt:1},
+  {typ:"flerval",fraga:"Vilket organ utser statsministern i Sverige?",alternativ:["Kungen","Folket direkt","Riksdagen","Regeringen"],ratt:2},
+  {typ:"flerval",fraga:"Var ligger Sveriges riksdag?",alternativ:["Gamla stan, Stockholm","Kungliga slottet, Stockholm","Riksdagshuset på Helgeandsholmen","Rosenbad, Stockholm"],ratt:2},
+  {typ:"flerval",fraga:"Från vilken ålder har man rösträtt i Sverige?",alternativ:["16 år","17 år","18 år","20 år"],ratt:2},
+  {typ:"flerval",fraga:"Vad kallas det system Sverige använder för att fördela riksdagsplatser?",alternativ:["Majoritetssystemet","Proportionellt valsystem","Distriktssystemet","Presidentvalet"],ratt:1},
+  {typ:"flerval",fraga:"Hur många procent måste ett parti få för att komma in i riksdagen?",alternativ:["2%","3%","4%","5%"],ratt:2},
+  {typ:"flerval",fraga:"Vad är riksdagens viktigaste uppgift?",alternativ:["Att leda försvaret","Att stifta lagar och besluta om statens budget","Att utse domare","Att representera Sverige utomlands"],ratt:1},
+  {typ:"flerval",fraga:"Vad kallas den grupp ministrar som styr Sverige tillsammans med statsministern?",alternativ:["Riksdagen","Senaten","Regeringen","Kabinetten"],ratt:2},
+  {typ:"flerval",fraga:"Vilket dokument är Sveriges grundlag?",alternativ:["Regeringsformen","Riksdagsordningen","Successionsordningen","Tryckfrihetsförordningen"],ratt:0},
+  {typ:"flerval",fraga:"Vad är en motion i riksdagen?",alternativ:["Ett förslag från en riksdagsledamot","Ett beslut från regeringen","En lag som redan stiftats","En fråga till statsministern"],ratt:0},
+  {typ:"flerval",fraga:"Vad kallas det när en riksdagsledamot ställer en skriftlig fråga till en minister?",alternativ:["Interpellation","Skriftlig fråga","Motion","Proposition"],ratt:1},
+  {typ:"flerval",fraga:"Vad är en proposition?",alternativ:["En fråga från en ledamot till en minister","Ett lagförslag från regeringen till riksdagen","En protest från oppositionen","Ett beslut från domstolen"],ratt:1},
+  {typ:"flerval",fraga:"Vad kallas det när riksdagen röstar nej till regeringens förslag?",alternativ:["Proposition","Avslag","Remiss","Utskott"],ratt:1},
+  {typ:"sant_falskt",fraga:"Kungen i Sverige har politisk makt och kan stoppa lagar.",ratt:false},
+  {typ:"sant_falskt",fraga:"Alla svenska medborgare som är 18 år eller äldre har rätt att rösta i riksdagsvalet.",ratt:true},
+  {typ:"sant_falskt",fraga:"Sverige är en republik.",ratt:false},
+  {typ:"sant_falskt",fraga:"Riksdagen kan rösta bort en statsminister genom en misstroendeomröstning.",ratt:true},
+  {typ:"sant_falskt",fraga:"I Sverige kan man rösta på både ett parti och en person på valsedeln.",ratt:true},
+  {typ:"sant_falskt",fraga:"Riksdagen består av två kamrar, precis som i USA.",ratt:false},
+  {typ:"sant_falskt",fraga:"Regeringen föreslår de flesta nya lagarna i Sverige.",ratt:true},
+  {typ:"sant_falskt",fraga:"Man måste vara svensk medborgare för att rösta i kommunalvalet.",ratt:false},
+  {typ:"sant_falskt",fraga:"Statsministern väljs direkt av folket i ett separat val.",ratt:false},
+  {typ:"sant_falskt",fraga:"Sverige har haft allmän rösträtt för kvinnor sedan 1921.",ratt:true},
+  {typ:"flerval",fraga:"Vad kallas Riksdagens ekonomiska kontrollorgan?",alternativ:["Riksbanken","Riksrevisionen","Riksförsäkringsverket","Statskontoret"],ratt:1},
+  {typ:"flerval",fraga:"Hur kallas det när riksdagen upplöses och nyval utlyses i förtid?",alternativ:["Riksdagsupplösning","Extraval","Nödval","Folkomröstning"],ratt:1},
+  {typ:"flerval",fraga:"Vad kallas det organ som kontrollerar att lagar följs?",alternativ:["Riksdagen","Regeringen","Domstolarna","Riksrevisionen"],ratt:2},
+  {typ:"flerval",fraga:"Vilket av dessa är INTE ett av riksdagens fyra grundlagar?",alternativ:["Regeringsformen","Tryckfrihetsförordningen","Brottsbalken","Successionsordningen"],ratt:2},
+  {typ:"flerval",fraga:"Vad händer om ingen statsminister kan utses efter ett val?",alternativ:["Kungen tar över","Extraval hålls","Talmannen styr landet","Riksdagen upplöses automatiskt"],ratt:1}
+];
+
+const SVENSKA_FRAGOR=[
+  {typ:"flerval",fraga:"Vilket ord är ett substantiv?",alternativ:["springa","snabb","hund","snabbt"],ratt:2},
+  {typ:"flerval",fraga:"Vilket ord är ett verb?",alternativ:["glad","läsa","bok","grön"],ratt:1},
+  {typ:"flerval",fraga:"Vilket ord är ett adjektiv?",alternativ:["hoppa","skola","stor","hastigt"],ratt:2},
+  {typ:"flerval",fraga:"Vilket ord är ett adverb?",alternativ:["snabbt","snabb","bil","köra"],ratt:0},
+  {typ:"flerval",fraga:"Vilket ord är ett pronomen?",alternativ:["hus","han","gå","lång"],ratt:1},
+  {typ:"flerval",fraga:"Vilken ordklass berättar hur något görs?",alternativ:["Substantiv","Adjektiv","Adverb","Preposition"],ratt:2},
+  {typ:"flerval",fraga:"Vad är grundformen av adjektivet 'snabbare'?",alternativ:["snabbast","snabb","snabbaste","snabbhet"],ratt:1},
+  {typ:"flerval",fraga:"Vilket av dessa är en preposition?",alternativ:["och","men","under","vacker"],ratt:2},
+  {typ:"flerval",fraga:"Vilket ord är ett substantiv i meningen 'Den röda bilen körde fort'?",alternativ:["Den","röda","bilen","fort"],ratt:2},
+  {typ:"flerval",fraga:"Vilken ordklass är 'och', 'men' och 'eller'?",alternativ:["Prepositioner","Konjunktioner","Pronomen","Adverb"],ratt:1},
+  {typ:"flerval",fraga:"Vilket pronomen används om en grupp personer?",alternativ:["han","hon","de","den"],ratt:2},
+  {typ:"flerval",fraga:"Vad kallas det när ett adjektiv jämförs? T.ex. stor – större – störst",alternativ:["Böjning","Komparation","Konjugation","Deklination"],ratt:1},
+  {typ:"flerval",fraga:"Vilket ord är ett verb i meningen 'Katten sover på mattan'?",alternativ:["Katten","sover","på","mattan"],ratt:1},
+  {typ:"flerval",fraga:"Vad är superlativformen av 'bra'?",alternativ:["bättre","bäst","godast","finast"],ratt:1},
+  {typ:"flerval",fraga:"Vilken ordklass är 'jag' i meningen 'Jag äter pizza'?",alternativ:["Substantiv","Verb","Pronomen","Adverb"],ratt:2},
+  {typ:"flerval",fraga:"Vad kallas det att böja ett verb i olika former?",alternativ:["Deklination","Konjugation","Komparation","Derivation"],ratt:1},
+  {typ:"flerval",fraga:"Vilket ord är en konjunktion i meningen 'Jag vill ha glass men jag är inte hungrig'?",alternativ:["Jag","vill","men","hungrig"],ratt:2},
+  {typ:"flerval",fraga:"Vilken ordklass beskriver var något befinner sig, t.ex. 'på', 'under', 'bredvid'?",alternativ:["Adverb","Konjunktion","Preposition","Interjektion"],ratt:2},
+  {typ:"flerval",fraga:"Vad är komparativformen av adjektivet 'lång'?",alternativ:["längst","längre","lång","länge"],ratt:1},
+  {typ:"flerval",fraga:"Vilket av följande är INTE en ordklass?",alternativ:["Substantiv","Adjektiv","Meningsbyggnad","Verb"],ratt:2},
+  {typ:"sant_falskt",fraga:"Ett substantiv är ett namn på en person, plats, sak eller känsla.",ratt:true},
+  {typ:"sant_falskt",fraga:"Adjektiv kan inte böjas i svenska.",ratt:false},
+  {typ:"sant_falskt",fraga:"'Springer' är grundformen av verbet springa.",ratt:false},
+  {typ:"sant_falskt",fraga:"Konjunktioner binder ihop ord och meningar.",ratt:true},
+  {typ:"sant_falskt",fraga:"'Snabbt' är ett adverb som beskriver hur något görs.",ratt:true},
+  {typ:"multiselect",fraga:"Vilka av dessa ord är substantiv?",alternativ:["skola","springa","lärare","glad","dator"],ratt:[0,2,4]},
+  {typ:"multiselect",fraga:"Vilka av dessa ord är verb?",alternativ:["hoppa","stor","simma","bok","skriva"],ratt:[0,2,4]},
+  {typ:"multiselect",fraga:"Vilka av dessa ord är adjektiv?",alternativ:["vacker","hus","liten","springa","glad"],ratt:[0,2,4]},
+  {typ:"multiselect",fraga:"Vilka av dessa ord är pronomen?",alternativ:["han","bok","hon","vi","snabb"],ratt:[0,2,3]},
+  {typ:"multiselect",fraga:"Vilka av dessa ord är adverb?",alternativ:["snabbt","bil","fort","glad","långsamt"],ratt:[0,2,4]}
+];
+
+const NO_FRAGOR=[
+  {typ:"flerval",fraga:"Vad kallas den minsta byggstenen i ett grundämne?",alternativ:["Molekyl","Atom","Elektron","Proton"],ratt:1},
+  {typ:"flerval",fraga:"Vad är skillnaden mellan en atom och en molekyl?",alternativ:["Det finns ingen skillnad","En molekyl är en enstaka atom","En atom är en enstaka partikel, en molekyl är flera atomer ihop","En molekyl är alltid ett grundämne"],ratt:2},
+  {typ:"flerval",fraga:"Vilket av dessa är ett grundämne?",alternativ:["Vatten (H₂O)","Koldioxid (CO₂)","Guld (Au)","Salt (NaCl)"],ratt:2},
+  {typ:"flerval",fraga:"Vad händer i en kemisk reaktion?",alternativ:["Atomer förstörs","Nya ämnen bildas när atomer ordnas om","Atomer skapas från ingenting","Molekyler försvinner"],ratt:1},
+  {typ:"flerval",fraga:"Vad är fotosyntes?",alternativ:["Växter andas ut koldioxid","Växter omvandlar solljus, vatten och CO₂ till socker och syre","Djur omvandlar mat till energi","Vatten omvandlas till is"],ratt:1},
+  {typ:"flerval",fraga:"Vad är cellandning?",alternativ:["Celler andas in luft","Celler bryter ned socker med syre för att frigöra energi","Celler bildar socker från solljus","Celler pumpar ut vatten"],ratt:1},
+  {typ:"flerval",fraga:"Vad bildas som biprodukt vid fotosyntes?",alternativ:["Koldioxid","Kväve","Syre","Vatten"],ratt:2},
+  {typ:"flerval",fraga:"Vad menas med kolets kretslopp?",alternativ:["Kol rör sig runt i naturen mellan atmosfär, växter, djur och mark","Kol produceras i fabriker","Kol bryts ned och försvinner","Kol finns bara i kol och diamant"],ratt:0},
+  {typ:"flerval",fraga:"Vad är fossila bränslen?",alternativ:["Bränslen gjorda av trä","Bränslen bildade av döda organismer under miljoner år","Bränslen från kärnkraft","Bränslen från solen"],ratt:1},
+  {typ:"flerval",fraga:"Hur påverkar förbränning av fossila bränslen klimatet?",alternativ:["Det minskar CO₂","Det ökar CO₂ och förstärker växthuseffekten","Det har ingen påverkan","Det kyler atmosfären"],ratt:1},
+  {typ:"flerval",fraga:"Vad är återvinning?",alternativ:["Att kasta sopor rätt","Att omvandla använt material till nytt råmaterial","Att bränna sopor för energi","Att minska förbrukning"],ratt:1},
+  {typ:"flerval",fraga:"Varför sparar återvinning energi?",alternativ:["Det gör det inte","Det krävs mindre energi att bearbeta återvunnet material än att utvinna nytt","Återvunnet material är lättare","Återvinning använder solenergi"],ratt:1},
+  {typ:"flerval",fraga:"Vad är skillnaden mellan återanvändning och återvinning?",alternativ:["Det finns ingen skillnad","Återanvändning = använd igen direkt, återvinning = omvandla till nytt material","Återvinning = använd igen direkt","Återanvändning är sämre för miljön"],ratt:1},
+  {typ:"flerval",fraga:"Vilket grundämne är centralt i alla organiska föreningar?",alternativ:["Väte","Syre","Kol","Kväve"],ratt:2},
+  {typ:"flerval",fraga:"Vilken process frigör energi som celler kan använda?",alternativ:["Fotosyntes","Återvinning","Cellandning","Förbränning i ugn"],ratt:2},
+  {typ:"sant_falskt",fraga:"Alla ämnen är uppbyggda av atomer.",ratt:true},
+  {typ:"sant_falskt",fraga:"I en kemisk reaktion kan atomer skapas och förstöras.",ratt:false},
+  {typ:"sant_falskt",fraga:"Vatten (H₂O) är ett grundämne.",ratt:false},
+  {typ:"sant_falskt",fraga:"Fotosyntes och förbränning är motsatta processer.",ratt:true},
+  {typ:"sant_falskt",fraga:"Metaller kan återvinnas.",ratt:true},
+  {typ:"sant_falskt",fraga:"Kolets kretslopp störs när vi förbränner fossila bränslen.",ratt:true},
+  {typ:"sant_falskt",fraga:"En partikelmodell visar hur atomer och molekyler är arrangerade i ett ämne.",ratt:true},
+  {typ:"multiselect",fraga:"Vilka av dessa är grundämnen?",alternativ:["Järn (Fe)","Vatten (H₂O)","Syre (O)","Salt (NaCl)","Kol (C)"],ratt:[0,2,4]},
+  {typ:"multiselect",fraga:"Vad behöver växter för att utföra fotosyntes?",alternativ:["Solljus","Syre","Koldioxid","Kväve","Vatten"],ratt:[0,2,4]},
+  {typ:"multiselect",fraga:"Vad ingår i kolets kretslopp?",alternativ:["Fotosyntes","Förbränning","Cellandning","Vattencykel","Nedbrytning"],ratt:[0,1,2,4]},
+  {typ:"oppet",fraga:"Förklara vad som händer med atomerna i en kemisk reaktion.",aiRubric:"Bedöm svaret: 'a'=tydlig förklaring att atomerna finns kvar men ordnas om och bildar nya ämnen, 'c'=nämner att atomer ordnas om men otydligt, 'e'=nämner att nya ämnen bildas men förklarar inte atomerna, 'wrong'=fel eller inget svar. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\"}"},
+  {typ:"oppet",fraga:"Förklara skillnaden mellan fotosyntes och cellandning.",aiRubric:"Bedöm svaret: 'a'=tydlig jämförelse med rätt riktning och ämnen för båda processerna, 'c'=förklarar båda men missar något viktigt, 'e'=förklarar en av processerna korrekt, 'wrong'=fel eller blandar ihop. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\"}"},
+  {typ:"oppet",fraga:"Varför är återvinning bra för miljön? Ge minst två anledningar.",aiRubric:"Bedöm svaret: 'a'=två tydliga anledningar med förklaring, 'c'=en tydlig anledning eller två ytliga, 'e'=nämner att det är bra utan förklaring, 'wrong'=inget relevant. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\"}"},
+  {typ:"oppet",fraga:"Vad är skillnaden mellan ett grundämne och en kemisk förening? Ge ett exempel på vardera.",aiRubric:"Bedöm svaret: 'a'=tydlig skillnad med korrekta exempel för båda, 'c'=förklarar skillnaden men exempel saknas eller är svaga, 'e'=nämner ett av begreppen korrekt, 'wrong'=fel eller inget svar. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\"}"}
+];
+
+const AMNE_FRAGBANKER={
+  'SO':SO_FRAGOR,
+  'Svenska':SVENSKA_FRAGOR,
+  'NO (Kemi)':NO_FRAGOR
+};
 
 function renderOvningar(){
   const wrap=document.getElementById('ovningWrap');
   if(mq.aktiv){renderMathQuizFraga();return;}
-  wrap.innerHTML=`
-    <div style="max-width:500px;margin:0 auto;padding:24px 20px 80px;">
-      <h2 style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;margin-bottom:4px;">Öva</h2>
-      <p style="color:var(--muted);font-size:.88rem;margin-bottom:28px;">Välj inställningar och kör igång</p>
+  if(aq.aktiv){renderAmnesQuizFraga();return;}
 
-      <div style="background:white;border-radius:14px;padding:20px;margin-bottom:16px;">
-        <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:700;margin-bottom:16px;">🔢 Multiplikation & Division</div>
+  const amnen=['Matematik','SO','Svenska','NO (Kemi)'];
+  const amneIcons={Matematik:'🔢',SO:'🏛️',Svenska:'📖','NO (Kemi)':'🔬'};
 
-        <div style="margin-bottom:16px;">
-          <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Välj tabeller (0–12)</div>
-          <div id="tabelValjare" style="display:flex;flex-wrap:wrap;gap:6px;">
-            ${Array.from({length:13},(_,i)=>`
-              <button onclick="toggleTabell(${i})" id="tbl${i}" style="width:40px;height:40px;border-radius:8px;border:2px solid #ddd;background:white;font-family:'Fraunces',serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .15s;">${i}</button>
-            `).join('')}
-          </div>
-        </div>
+  wrap.innerHTML=`<div style="max-width:540px;margin:0 auto;padding:24px 20px 80px;">
+    <h2 style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;margin-bottom:4px;">Öva</h2>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:20px;">Välj ett ämne att öva på</p>
+    <div style="display:flex;gap:8px;margin-bottom:24px;overflow-x:auto;padding-bottom:4px;">
+      ${amnen.map(a=>`<button onclick="byttOvningAmne('${a}')" style="padding:8px 16px;border-radius:20px;border:2px solid ${a===aktivtOvningAmne?'var(--ink)':'#ddd'};background:${a===aktivtOvningAmne?'var(--ink)':'white'};color:${a===aktivtOvningAmne?'var(--paper)':'var(--muted)'};font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;">${amneIcons[a]} ${a}</button>`).join('')}
+    </div>
+    <div id="ovningInnehall"></div>
+  </div>`;
 
-        <div style="margin-bottom:16px;">
-          <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Typ av uppgifter</div>
-          <div style="display:flex;gap:8px;">
-            <button onclick="valjTyp('gang')" id="typGang" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">× Gånger</button>
-            <button onclick="valjTyp('division')" id="typDiv" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">÷ Division</button>
-            <button onclick="valjTyp('bada')" id="typBada" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">Båda</button>
-          </div>
-        </div>
-
-        <div style="margin-bottom:20px;">
-          <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Antal frågor</div>
-          <div style="display:flex;gap:8px;">
-            <button onclick="valjAntal(10)" id="antal10" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">10</button>
-            <button onclick="valjAntal(20)" id="antal20" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">20</button>
-          </div>
-        </div>
-
-        <button onclick="startaMathQuiz()" style="width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;">Kör igång →</button>
-        <div style="color:var(--red);font-size:.82rem;margin-top:8px;text-align:center;min-height:16px;" id="mathError"></div>
-      </div>
-
-      ${mq.installningar?`<div style="background:white;border-radius:14px;padding:16px 20px;">
-        <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Senaste resultat</div>
-        <div style="font-family:'Fraunces',serif;font-size:2rem;font-weight:900;color:var(--green);">${mq.ratt}/${mq.ratt+mq.fel}</div>
-        <div style="font-size:.82rem;color:var(--muted);">rätt av ${mq.ratt+mq.fel} frågor</div>
-      </div>`:''}
-    </div>`;
-
-  // Återställ knappar
-  mq.installningar=mq.installningar||{tabeller:[],typ:'gang',antal:10};
-  mq.installningar.tabeller.forEach(t=>toggleTabelBtn(t,true));
-  uppdateraTypBtns(mq.installningar.typ||'gang');
-  uppdateraAntalBtns(mq.installningar.antal||10);
+  renderOvningInnehall();
 }
+
+function byttOvningAmne(amne){
+  aktivtOvningAmne=amne;
+  renderOvningar();
+}
+
+function renderOvningInnehall(){
+  const el=document.getElementById('ovningInnehall');
+  if(!el)return;
+
+  if(aktivtOvningAmne==='Matematik'){
+    el.innerHTML=`<div style="background:white;border-radius:14px;padding:20px;margin-bottom:16px;">
+      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:700;margin-bottom:16px;">🔢 Multiplikation & Division</div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Välj tabeller (0–12)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${Array.from({length:13},(_,i)=>`<button onclick="toggleTabell(${i})" id="tbl${i}" style="width:40px;height:40px;border-radius:8px;border:2px solid #ddd;background:white;font-family:'Fraunces',serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .15s;">${i}</button>`).join('')}
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Typ av uppgifter</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="valjTyp('gang')" id="typGang" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">× Gånger</button>
+          <button onclick="valjTyp('division')" id="typDiv" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">÷ Division</button>
+          <button onclick="valjTyp('bada')" id="typBada" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">Båda</button>
+        </div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Antal frågor</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="valjAntal(10)" id="antal10" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">10</button>
+          <button onclick="valjAntal(20)" id="antal20" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">20</button>
+        </div>
+      </div>
+      <button onclick="startaMathQuiz()" style="width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;">Kör igång →</button>
+      <div style="color:var(--red);font-size:.82rem;margin-top:8px;text-align:center;min-height:16px;" id="mathError"></div>
+    </div>`;
+    mq.installningar=mq.installningar||{tabeller:[],typ:'gang',antal:10};
+    mq.installningar.tabeller.forEach(t=>toggleTabelBtn(t,true));
+    uppdateraTypBtns(mq.installningar.typ||'gang');
+    uppdateraAntalBtns(mq.installningar.antal||10);
+    return;
+  }
+
+  const fragbank=AMNE_FRAGBANKER[aktivtOvningAmne];
+  const typer=[...new Set(fragbank.map(f=>f.typ))];
+  const typLabels={flerval:'Flerval',sant_falskt:'Sant/Falskt',multiselect:'Multi-select',oppet:'Öppet svar'};
+  const typIcons={flerval:'☑️',sant_falskt:'✓✗',multiselect:'☑☑',oppet:'✏️'};
+
+  el.innerHTML=`<div style="background:white;border-radius:14px;padding:20px;margin-bottom:16px;">
+    <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;font-weight:600;">Välj frågetyper</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+      ${typer.map(t=>`<label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:8px;border:2px solid #ddd;background:white;transition:all .15s;" id="typLabel_${t}">
+        <input type="checkbox" id="typCheck_${t}" checked style="width:16px;height:16px;cursor:pointer;" onchange="uppdateraTypLabel('${t}')">
+        <span style="font-size:.9rem;">${typIcons[t]||''} ${typLabels[t]||t}</span>
+        <span style="font-size:.78rem;color:var(--muted);margin-left:auto;">${fragbank.filter(f=>f.typ===t).length} frågor</span>
+      </label>`).join('')}
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Antal frågor</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="valjAmnesAntal(10)" id="amnesAntal10" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">10</button>
+        <button onclick="valjAmnesAntal(20)" id="amnesAntal20" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">20</button>
+      </div>
+    </div>
+    <button onclick="startaAmnesQuiz()" style="width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;">Kör igång →</button>
+    <div style="color:var(--red);font-size:.82rem;margin-top:8px;text-align:center;min-height:16px;" id="amnesError"></div>
+  </div>`;
+}
+
+let amnesAntal=10;
+function valjAmnesAntal(n){
+  amnesAntal=n;
+  ['10','20'].forEach(x=>{
+    const btn=document.getElementById(`amnesAntal${x}`);
+    if(!btn)return;
+    const on=parseInt(x)===n;
+    btn.style.background=on?'var(--ink)':'white';
+    btn.style.color=on?'var(--paper)':'var(--muted)';
+    btn.style.borderColor=on?'var(--ink)':'#ddd';
+  });
+}
+function uppdateraTypLabel(t){
+  const lbl=document.getElementById(`typLabel_${t}`);
+  const chk=document.getElementById(`typCheck_${t}`);
+  if(!lbl||!chk)return;
+  lbl.style.borderColor=chk.checked?'var(--ink)':'#ddd';
+}
+
+function startaAmnesQuiz(){
+  const fragbank=AMNE_FRAGBANKER[aktivtOvningAmne];
+  const typer=[...new Set(fragbank.map(f=>f.typ))];
+  const valda=typer.filter(t=>{const c=document.getElementById(`typCheck_${t}`);return c&&c.checked;});
+  if(!valda.length){document.getElementById('amnesError').textContent='Välj minst en frågetyp.';return;}
+  const pool=fragbank.filter(f=>valda.includes(f.typ));
+  const shuffled=[...pool].sort(()=>Math.random()-0.5).slice(0,amnesAntal);
+  if(!shuffled.length){document.getElementById('amnesError').textContent='Inga frågor tillgängliga.';return;}
+  aq={aktiv:true,amne:aktivtOvningAmne,fragor:shuffled,index:0,ratt:0,fel:0,multiVal:[],openSvar:null};
+  renderAmnesQuizFraga();
+}
+
+function renderAmnesQuizFraga(){
+  const wrap=document.getElementById('ovningWrap');
+  if(aq.index>=aq.fragor.length){
+    sparaAmnesResultat();
+    aq.aktiv=false;
+    const pct=Math.round((aq.ratt/aq.fragor.length)*100);
+    wrap.innerHTML=`<div style="max-width:500px;margin:0 auto;padding:40px 20px;text-align:center;">
+      <div style="font-size:3rem;margin-bottom:16px;">${pct>=80?'🏆':pct>=60?'👍':'💪'}</div>
+      <div style="font-family:'Fraunces',serif;font-size:2.5rem;font-weight:900;color:var(--green);margin-bottom:4px;">${aq.ratt}/${aq.fragor.length}</div>
+      <div style="color:var(--muted);margin-bottom:28px;">rätt av ${aq.fragor.length} frågor (${pct}%)</div>
+      <button onclick="renderOvningar()" style="width:100%;padding:14px;background:var(--ink);color:var(--paper);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;margin-bottom:10px;">Försök igen</button>
+      <button onclick="byttFlik('Profil');renderProfil()" style="width:100%;padding:14px;background:transparent;border:2px solid var(--ink);color:var(--ink);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;">Se statistik →</button>
+    </div>`;
+    return;
+  }
+
+  const q=aq.fragor[aq.index];
+  const total=aq.fragor.length;
+  const pct=Math.round((aq.index/total)*100);
+  aq.multiVal=[];aq.openSvar=null;
+
+  let fraganHTML='';
+  if(q.typ==='flerval'){
+    fraganHTML=`<div style="display:flex;flex-direction:column;gap:8px;">
+      ${q.alternativ.map((a,i)=>`<button onclick="svaraFlerval(${i})" id="alt${i}" style="padding:12px 16px;background:white;border:2px solid #ddd;border-radius:10px;text-align:left;font-family:'DM Sans',sans-serif;font-size:.92rem;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .15s;">
+        <span style="width:24px;height:24px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;">${String.fromCharCode(65+i)}</span>${a}
+      </button>`).join('')}
+    </div>`;
+  }else if(q.typ==='sant_falskt'){
+    fraganHTML=`<div style="display:flex;gap:12px;">
+      <button onclick="svaraSantFalskt(true)" style="flex:1;padding:20px;background:white;border:2px solid #ddd;border-radius:12px;font-family:'Fraunces',serif;font-size:1.2rem;font-weight:700;cursor:pointer;transition:all .15s;" id="santBtn">✓ Sant</button>
+      <button onclick="svaraSantFalskt(false)" style="flex:1;padding:20px;background:white;border:2px solid #ddd;border-radius:12px;font-family:'Fraunces',serif;font-size:1.2rem;font-weight:700;cursor:pointer;transition:all .15s;" id="falsktBtn">✗ Falskt</button>
+    </div>`;
+  }else if(q.typ==='multiselect'){
+    fraganHTML=`<p style="font-size:.82rem;color:var(--muted);margin-bottom:10px;">Välj alla som stämmer</p>
+    <div style="display:flex;flex-direction:column;gap:8px;" id="multiWrap">
+      ${q.alternativ.map((a,i)=>`<button onclick="toggleMulti(${i})" id="multi${i}" style="padding:12px 16px;background:white;border:2px solid #ddd;border-radius:10px;text-align:left;font-family:'DM Sans',sans-serif;font-size:.92rem;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .15s;">
+        <span style="width:20px;height:20px;border-radius:4px;border:2px solid #ddd;flex-shrink:0;" id="multiCheck${i}"></span>${a}
+      </button>`).join('')}
+    </div>
+    <button onclick="svaraMulti()" style="width:100%;padding:12px;background:var(--ink);color:var(--paper);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;margin-top:12px;">Kontrollera</button>`;
+  }else if(q.typ==='oppet'){
+    fraganHTML=`<textarea id="openSvarInput" placeholder="Skriv ditt svar här..." style="width:100%;padding:14px;border:2px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.92rem;resize:vertical;min-height:100px;outline:none;margin-bottom:10px;"></textarea>
+    <button onclick="svaraOppet()" style="width:100%;padding:12px;background:var(--ink);color:var(--paper);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;">⏳ Skicka för AI-bedömning</button>`;
+  }
+
+  wrap.innerHTML=`<div style="max-width:500px;margin:0 auto;padding:24px 20px 80px;">
+    <div style="height:4px;background:var(--soft);border-radius:4px;margin-bottom:20px;overflow:hidden;">
+      <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;"></div>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px;">Fråga ${aq.index+1} av ${total} · ✓ ${aq.ratt} ✗ ${aq.fel}</div>
+    <div style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:700;line-height:1.4;margin-bottom:20px;">${q.fraga}</div>
+    ${fraganHTML}
+    <div id="aqFeedback" style="margin-top:12px;"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <button onclick="avslutaAmnesQuiz()" style="background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer;">Avsluta</button>
+    </div>
+  </div>`;
+}
+
+function svaraFlerval(idx){
+  const q=aq.fragor[aq.index];
+  const ratt=idx===q.ratt;
+  if(ratt)aq.ratt++;else aq.fel++;
+  document.querySelectorAll('[id^="alt"]').forEach((b,i)=>{
+    b.onclick=null;
+    if(i===q.ratt){b.style.borderColor='var(--green)';b.style.background='#e6f7f1';}
+    else if(i===idx&&!ratt){b.style.borderColor='var(--red)';b.style.background='#fdf0f0';}
+  });
+  visaAqFeedback(ratt,null);
+  setTimeout(()=>{aq.index++;renderAmnesQuizFraga();},1200);
+}
+
+function svaraSantFalskt(svar){
+  const q=aq.fragor[aq.index];
+  const ratt=svar===q.ratt;
+  if(ratt)aq.ratt++;else aq.fel++;
+  document.getElementById('santBtn').onclick=null;
+  document.getElementById('falsktBtn').onclick=null;
+  document.getElementById(svar?'santBtn':'falsktBtn').style.borderColor=ratt?'var(--green)':'var(--red)';
+  document.getElementById(svar?'santBtn':'falsktBtn').style.background=ratt?'#e6f7f1':'#fdf0f0';
+  if(!ratt){
+    document.getElementById(!svar?'santBtn':'falsktBtn').style.borderColor='var(--green)';
+    document.getElementById(!svar?'santBtn':'falsktBtn').style.background='#e6f7f1';
+  }
+  visaAqFeedback(ratt,null);
+  setTimeout(()=>{aq.index++;renderAmnesQuizFraga();},1200);
+}
+
+function toggleMulti(idx){
+  const pos=aq.multiVal.indexOf(idx);
+  if(pos>-1)aq.multiVal.splice(pos,1);else aq.multiVal.push(idx);
+  const chk=document.getElementById(`multiCheck${idx}`);
+  const btn=document.getElementById(`multi${idx}`);
+  const on=aq.multiVal.includes(idx);
+  if(chk){chk.style.background=on?'var(--ink)':'';chk.style.borderColor=on?'var(--ink)':'#ddd';}
+  if(btn){btn.style.borderColor=on?'var(--ink)':'#ddd';}
+}
+
+function svaraMulti(){
+  const q=aq.fragor[aq.index];
+  const ratt=JSON.stringify([...aq.multiVal].sort())===JSON.stringify([...q.ratt].sort());
+  if(ratt)aq.ratt++;else aq.fel++;
+  q.alternativ.forEach((_,i)=>{
+    const btn=document.getElementById(`multi${i}`);
+    if(!btn)return;
+    btn.onclick=null;
+    if(q.ratt.includes(i)){btn.style.borderColor='var(--green)';btn.style.background='#e6f7f1';}
+    else if(aq.multiVal.includes(i)&&!q.ratt.includes(i)){btn.style.borderColor='var(--red)';btn.style.background='#fdf0f0';}
+  });
+  visaAqFeedback(ratt,`Rätt svar: ${q.ratt.map(i=>q.alternativ[i]).join(', ')}`);
+  setTimeout(()=>{aq.index++;renderAmnesQuizFraga();},1800);
+}
+
+async function svaraOppet(){
+  const text=document.getElementById('openSvarInput')?.value.trim();
+  if(!text)return;
+  const q=aq.fragor[aq.index];
+  const btn=document.querySelector('#ovningWrap button:last-of-type');
+  if(btn){btn.disabled=true;btn.textContent='⏳ AI bedömer...';}
+  const result=await gradeWithAI(q,text);
+  const ratt=result.level&&result.level!=='wrong';
+  if(ratt)aq.ratt++;else aq.fel++;
+  const nivaLabel={a:'Välutvecklat',c:'Utvecklat',e:'Godkänt',wrong:'Inte riktigt'}[result.level||'wrong'];
+  visaAqFeedback(ratt,`AI: ${nivaLabel}${result.reason?` · ${result.reason}`:''}`);
+  setTimeout(()=>{aq.index++;renderAmnesQuizFraga();},2500);
+}
+
+function visaAqFeedback(ratt,extra){
+  const el=document.getElementById('aqFeedback');
+  if(!el)return;
+  el.innerHTML=`<div style="padding:10px 14px;border-radius:8px;background:${ratt?'#e6f7f1':'#fdf0f0'};border-left:3px solid ${ratt?'var(--green)':'var(--red)'};font-size:.85rem;">
+    ${ratt?'✓ Rätt!':'✗ Inte riktigt'}${extra?`<br><span style="opacity:.75;font-size:.8rem;">${extra}</span>`:''}
+  </div>`;
+}
+
+function sparaAmnesResultat(){
+  const ovning={
+    amne:aq.amne,
+    datum:new Date().toLocaleDateString('sv-SE'),
+    tid:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}),
+    typ:'ämnesquiz',
+    antal:aq.fragor.length,
+    ratt:aq.ratt,
+    pct:Math.round((aq.ratt/aq.fragor.length)*100)
+  };
+  ovningHistory.unshift(ovning);
+  saveOvningToSheets(ovning);
+}
+
+function avslutaAmnesQuiz(){aq.aktiv=false;renderOvningar();}
 
 function toggleTabell(n){
   if(!mq.installningar)mq.installningar={tabeller:[],typ:'gang',antal:10};
@@ -1013,22 +1352,20 @@ function renderMathQuizFraga(){
   const pct=Math.round((mq.index/total)*100);
 
   if(mq.index>=total){
-    // Spara resultat till localStorage
     mq.aktiv=false;
     const pctRatt=Math.round((mq.ratt/total)*100);
-    try{
-      const hist=JSON.parse(localStorage.getItem(`fq_math_${currentStudent}`)||'[]');
-      hist.unshift({
-        datum:new Date().toLocaleDateString('sv-SE'),
-        tid:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}),
-        tabeller:mq.installningar.tabeller.sort((a,b)=>a-b),
-        typ:mq.installningar.typ,
-        antal:total,
-        ratt:mq.ratt,
-        pct:pctRatt
-      });
-      localStorage.setItem(`fq_math_${currentStudent}`,JSON.stringify(hist.slice(0,20)));
-    }catch{}
+    const typLabel={gang:'Gånger',division:'Division',bada:'Gånger & Division'};
+    const ovning={
+      datum:new Date().toLocaleDateString('sv-SE'),
+      tid:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}),
+      amne:`Tabell ${mq.installningar.tabeller.sort((a,b)=>a-b).join(', ')}`,
+      typ:typLabel[mq.installningar.typ]||'Matematik',
+      antal:total,
+      ratt:mq.ratt,
+      pct:pctRatt
+    };
+    ovningHistory.unshift(ovning);
+    saveOvningToSheets(ovning);
     wrap.innerHTML=`<div style="max-width:500px;margin:0 auto;padding:40px 20px;text-align:center;">
       <div style="font-size:3rem;margin-bottom:16px;">${pctRatt>=80?'🏆':pctRatt>=60?'👍':'💪'}</div>
       <div style="font-family:'Fraunces',serif;font-size:2.5rem;font-weight:900;color:var(--green);margin-bottom:4px;">${mq.ratt}/${total}</div>
