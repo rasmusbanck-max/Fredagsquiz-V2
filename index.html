@@ -676,13 +676,19 @@ async function gradeWithAI(q,ans){
     url.searchParams.set('rubric',q.aiRubric);
     url.searchParams.set('question',q.text);
     url.searchParams.set('answer',ans);
-    console.log('AI-anrop skickas till:',url.toString());
-    const res=await fetch(url.toString());
+    const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),15000));
+    const res=await Promise.race([fetch(url.toString()),timeout]);
     const raw=await res.text();
-    console.log('AI-svar:',raw);
     return JSON.parse(raw.replace(/```json|```/g,'').trim());
   }catch(err){
-    console.error('AI-fel:',err);
+    // Vid timeout eller fel, lås upp knappen om den väntar
+    const nextBtn=document.getElementById('nextBtn');
+    if(nextBtn&&nextBtn.dataset.waiting==='ai'){
+      nextBtn.disabled=false;
+      nextBtn.innerHTML='Se resultat';
+      nextBtn.dataset.waiting='';
+      nextBtn.style.opacity='';
+    }
     return{level:null,reason:null};
   }
 }
@@ -732,6 +738,8 @@ function neka(qId){
   const aIdx=answers.findIndex(a=>a.qId===qId&&a.type==='open');
   if(aIdx>-1)answers[aIdx].kompletteringDeclined=true;
   document.getElementById('kompletteraOffer').remove();
+  // Lås självbedömningsknapparna efter nej tack
+  document.querySelectorAll('.sa-btn').forEach(b=>{b.onclick=null;b.style.opacity='.5';b.style.cursor='default';});
   visaNextEllerVanta();
 }
 function visaNextEllerVanta(){
