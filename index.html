@@ -675,7 +675,7 @@ function renderHem(){
   if(locked){
     bannerEl.innerHTML=`<div class="no-quiz-banner"><p>✓ Du har gjort veckans quiz. Bra jobbat!</p></div>
     <a href="${CLASSROOM_URL}" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:white;border-radius:12px;padding:16px 20px;border-left:4px solid var(--accent2);text-decoration:none;color:var(--ink);margin-bottom:20px;">
-      <div><div style="font-family:'Fraunces',serif;font-weight:700;font-size:1rem;margin-bottom:2px;">Google Classroom</div><div style="font-size:.83rem;color:var(--muted);">Öppna klassrummet</div></div>
+      <div><div style="font-family:'Fraunces',serif;font-weight:700;font-size:1rem;margin-bottom:2px;">Google Classroom – NO</div><div style="font-size:.83rem;color:var(--muted);">Öppna klassrummet för naturvetenskap</div></div>
       <span style="font-size:1.4rem;color:var(--accent2);">→</span>
     </a>`;
   }else{
@@ -684,7 +684,7 @@ function renderHem(){
       <span class="quiz-banner-arrow">→</span>
     </div>
     <a href="${CLASSROOM_URL}" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:white;border-radius:12px;padding:16px 20px;border-left:4px solid var(--accent2);text-decoration:none;color:var(--ink);margin-bottom:20px;">
-      <div><div style="font-family:'Fraunces',serif;font-weight:700;font-size:1rem;margin-bottom:2px;">Google Classroom</div><div style="font-size:.83rem;color:var(--muted);">Öppna klassrummet</div></div>
+      <div><div style="font-family:'Fraunces',serif;font-weight:700;font-size:1rem;margin-bottom:2px;">Google Classroom – NO</div><div style="font-size:.83rem;color:var(--muted);">Öppna klassrummet för naturvetenskap</div></div>
       <span style="font-size:1.4rem;color:var(--accent2);">→</span>
     </a>`;
   }
@@ -705,40 +705,55 @@ function renderHem(){
 // ── PROFIL/STATISTIK ─────────────────────────────────────────
 function renderProfil(){
   const wrap=document.getElementById('profilWrap');
-  if(!elevHistory.length){
+  const harQuiz=elevHistory.length>0;
+  const harOvningar=ovningHistory.length>0;
+
+  if(!harQuiz&&!harOvningar){
     wrap.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--muted);">
       <div style="font-size:2rem;margin-bottom:12px;">📊</div>
-      <p>Statistik visas när du gjort ditt första quiz.</p>
+      <p>Statistik visas när du gjort ett quiz eller en övning.</p>
     </div>`;
     return;
   }
-  const avgScore=Math.round(elevHistory.reduce((s,h)=>s+(parseInt(h.score)||0),0)/elevHistory.length);
-  const bestScore=Math.max(...elevHistory.map(h=>parseInt(h.score)||0));
-  const emoji=PLANET_EMOJI[currentStudent]||'🌟';
 
-  // Ämnesdata från senaste quizet
-  const senaste=elevHistory[elevHistory.length-1];
-  const subjects={};
-  (senaste?.answers||[]).forEach(a=>{
-    const q=quizData.questions.find(q=>q.id===a.qId);if(!q)return;
-    if(!subjects[q.subject])subjects[q.subject]={total:0,score:0};
-    subjects[q.subject].total++;subjects[q.subject].score+=a.score||0;
-  });
+  const emoji=PLANET_EMOJI[currentStudent]||'🌟';
+  const avgScore=harQuiz?Math.round(elevHistory.reduce((s,h)=>s+(parseInt(h.score)||0),0)/elevHistory.length):null;
+  const bestScore=harQuiz?Math.max(...elevHistory.map(h=>parseInt(h.score)||0)):null;
+  const avgOvning=harOvningar?Math.round(ovningHistory.reduce((s,h)=>s+(h.pct||0),0)/ovningHistory.length):null;
+
   const colors=['var(--accent2)','var(--green)','var(--accent)','var(--yellow)'];
+  const subjects={};
+  if(harQuiz){
+    const senaste=elevHistory[elevHistory.length-1];
+    (senaste?.answers||[]).forEach(a=>{
+      const q=quizData.questions.find(q=>q.id===a.qId);if(!q)return;
+      if(!subjects[q.subject])subjects[q.subject]={total:0,score:0};
+      subjects[q.subject].total++;subjects[q.subject].score+=a.score||0;
+    });
+  }
 
   const sorted=[...elevHistory].sort((a,b)=>a.week-b.week);
-  const maxScore=Math.max(...sorted.map(h=>parseInt(h.score)||0));
+  const maxScore=harQuiz?Math.max(...sorted.map(h=>parseInt(h.score)||0)):0;
+
+  // Övningsstatistik per ämne
+  const ovnAmnen={};
+  ovningHistory.forEach(h=>{
+    if(!ovnAmnen[h.amne])ovnAmnen[h.amne]={total:0,sumPct:0,count:0};
+    ovnAmnen[h.amne].total+=h.antal||0;
+    ovnAmnen[h.amne].sumPct+=h.pct||0;
+    ovnAmnen[h.amne].count++;
+  });
 
   wrap.innerHTML=`
     <div class="profil-hero">
       <span class="profil-planet">${emoji}</span>
-      <div><div class="profil-name">${currentStudent}</div><div class="profil-week">${elevHistory.length} quiz gjorda</div></div>
-      <div class="profil-score-big">${avgScore}%</div>
+      <div><div class="profil-name">${currentStudent}</div><div class="profil-week">${harQuiz?elevHistory.length+' quiz gjorda':'Inga quiz än'}</div></div>
+      ${avgScore!=null?`<div class="profil-score-big">${avgScore}%</div>`:''}
     </div>
     <div class="profil-grid">
-      <div class="profil-stat"><div class="ps-label">Snitt</div><div class="ps-value">${avgScore}%</div><div class="ps-sub">alla veckor</div></div>
-      <div class="profil-stat"><div class="ps-label">Bäst</div><div class="ps-value" style="color:var(--green)">${bestScore}%</div><div class="ps-sub">bästa vecka</div></div>
-      <div class="profil-stat"><div class="ps-label">Quiz</div><div class="ps-value">${elevHistory.length}</div><div class="ps-sub">totalt</div></div>
+      <div class="profil-stat"><div class="ps-label">Quiz snitt</div><div class="ps-value">${avgScore!=null?avgScore+'%':'—'}</div><div class="ps-sub">fredagsquiz</div></div>
+      <div class="profil-stat"><div class="ps-label">Bäst quiz</div><div class="ps-value" style="color:var(--green)">${bestScore!=null?bestScore+'%':'—'}</div><div class="ps-sub">bästa vecka</div></div>
+      <div class="profil-stat"><div class="ps-label">Övn. snitt</div><div class="ps-value">${avgOvning!=null?avgOvning+'%':'—'}</div><div class="ps-sub">${harOvningar?ovningHistory.length+' övningar':'inga ännu'}</div></div>
     </div>
     ${Object.keys(subjects).length?`<div class="section-card">
       <h3>Senaste quizet per ämne</h3>
@@ -750,6 +765,16 @@ function renderProfil(){
         </div>`;
       }).join('')}
     </div>`:''}
+    ${Object.keys(ovnAmnen).length?`<div class="section-card">
+      <h3>Övningar per ämne</h3>
+      ${Object.entries(ovnAmnen).map(([amne,d],i)=>{
+        const snitt=Math.round(d.sumPct/d.count);
+        return `<div class="bar-row">
+          <div class="bar-label"><span>${amne}</span><span>${snitt}% snitt · ${d.count} gånger</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${snitt}%;background:${colors[i%colors.length]}"></div></div>
+        </div>`;
+      }).join('')}
+    </div>`:''}
     ${sorted.length>1?`<div class="section-card">
       <h3>Historik fredagsquiz</h3>
       ${sorted.map(h=>`<div class="history-row">
@@ -758,19 +783,16 @@ function renderProfil(){
         <span class="hw-score">${h.score}%</span>
       </div>`).join('')}
     </div>`:''}
-    ${(()=>{
-      if(!ovningHistory.length)return'';
-      return `<div class="section-card">
-        <h3>Senaste övningar</h3>
-        ${ovningHistory.slice(0,10).map(h=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--soft);">
-          <div style="flex:1;">
-            <div style="font-size:.85rem;font-weight:500;">${h.amne} · ${h.antal} frågor</div>
-            <div style="font-size:.75rem;color:var(--muted);">${h.datum} ${h.tid}</div>
-          </div>
-          <div style="font-family:'Fraunces',serif;font-weight:700;color:${(h.pct||0)>=80?'var(--green)':(h.pct||0)>=60?'#e08020':'var(--red)'};">${h.ratt}/${h.antal}</div>
-        </div>`).join('')}
-      </div>`;
-    })()}`;
+    ${ovningHistory.length?`<div class="section-card">
+      <h3>Senaste övningar</h3>
+      ${ovningHistory.slice(0,10).map(h=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--soft);">
+        <div style="flex:1;">
+          <div style="font-size:.85rem;font-weight:500;">${h.amne} · ${h.antal} frågor</div>
+          <div style="font-size:.75rem;color:var(--muted);">${h.datum} ${h.tid}</div>
+        </div>
+        <div style="font-family:'Fraunces',serif;font-weight:700;color:${(h.pct||0)>=80?'var(--green)':(h.pct||0)>=60?'#e08020':'var(--red)'};">${h.ratt}/${h.antal}</div>
+      </div>`).join('')}
+    </div>`:''}`;
 }
 
 // ── MÅL ─────────────────────────────────────────────────────
@@ -1078,8 +1100,9 @@ function renderOvningInnehall(){
     <div style="margin-bottom:20px;">
       <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Antal frågor</div>
       <div style="display:flex;gap:8px;">
+        <button onclick="valjAmnesAntal(5)" id="amnesAntal5" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">5</button>
         <button onclick="valjAmnesAntal(10)" id="amnesAntal10" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">10</button>
-        <button onclick="valjAmnesAntal(20)" id="amnesAntal20" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">20</button>
+        <button onclick="valjAmnesAntal(15)" id="amnesAntal15" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">15</button>
       </div>
     </div>
     <button onclick="startaAmnesQuiz()" style="width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;">Kör igång →</button>
@@ -1090,10 +1113,10 @@ function renderOvningInnehall(){
 let amnesAntal=10;
 function valjAmnesAntal(n){
   amnesAntal=n;
-  ['10','20'].forEach(x=>{
+  [5,10,15].forEach(x=>{
     const btn=document.getElementById(`amnesAntal${x}`);
     if(!btn)return;
-    const on=parseInt(x)===n;
+    const on=x===n;
     btn.style.background=on?'var(--ink)':'white';
     btn.style.color=on?'var(--paper)':'var(--muted)';
     btn.style.borderColor=on?'var(--ink)':'#ddd';
@@ -1112,9 +1135,9 @@ function startaAmnesQuiz(){
   const valda=typer.filter(t=>{const c=document.getElementById(`typCheck_${t}`);return c&&c.checked;});
   if(!valda.length){document.getElementById('amnesError').textContent='Välj minst en frågetyp.';return;}
   const pool=fragbank.filter(f=>valda.includes(f.typ));
-  const shuffled=[...pool].sort(()=>Math.random()-0.5).slice(0,amnesAntal);
-  if(!shuffled.length){document.getElementById('amnesError').textContent='Inga frågor tillgängliga.';return;}
-  aq={aktiv:true,amne:aktivtOvningAmne,fragor:shuffled,index:0,ratt:0,fel:0,multiVal:[],openSvar:null};
+  if(!pool.length){document.getElementById('amnesError').textContent='Inga frågor tillgängliga.';return;}
+  const shuffled=[...pool].sort(()=>Math.random()-0.5).slice(0,Math.min(amnesAntal,pool.length));
+  aq={aktiv:true,amne:aktivtOvningAmne,fragor:shuffled,index:0,ratt:0,fel:0,multiVal:[],openSvar:null,totalPool:pool.length};
   renderAmnesQuizFraga();
 }
 
@@ -1127,8 +1150,9 @@ function renderAmnesQuizFraga(){
     wrap.innerHTML=`<div style="max-width:500px;margin:0 auto;padding:40px 20px;text-align:center;">
       <div style="font-size:3rem;margin-bottom:16px;">${pct>=80?'🏆':pct>=60?'👍':'💪'}</div>
       <div style="font-family:'Fraunces',serif;font-size:2.5rem;font-weight:900;color:var(--green);margin-bottom:4px;">${aq.ratt}/${aq.fragor.length}</div>
-      <div style="color:var(--muted);margin-bottom:28px;">rätt av ${aq.fragor.length} frågor (${pct}%)</div>
-      <button onclick="renderOvningar()" style="width:100%;padding:14px;background:var(--ink);color:var(--paper);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;margin-bottom:10px;">Försök igen</button>
+      <div style="color:var(--muted);margin-bottom:16px;">rätt av ${aq.fragor.length} frågor (${pct}%)</div>
+      ${aq.fragor.length>=aq.totalPool?`<div style="background:var(--e-bg);border:1px solid var(--e-border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.85rem;color:var(--e-text);">🎉 Du har gått igenom alla tillgängliga frågor för detta ämne!</div>`:''}
+      <button onclick="renderOvningar()" style="width:100%;padding:14px;background:var(--ink);color:var(--paper);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;margin-bottom:10px;">Kör igen</button>
       <button onclick="byttFlik('Profil');renderProfil()" style="width:100%;padding:14px;background:transparent;border:2px solid var(--ink);color:var(--ink);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;">Se statistik →</button>
     </div>`;
     return;
@@ -1880,11 +1904,21 @@ function checkTeacherPin(){
 
 async function loadTeacherDash(){
   document.getElementById('studentTable').innerHTML=`<div class="no-results"><span class="spinner"></span> Hämtar...</div>`;
-  const sheetsData=await loadFromSheets();
+  const [sheetsData,ovnData]=await Promise.all([loadFromSheets(),loadAllaOvningar()]);
   sheetsData.forEach(s=>{
     if(!submissions.find(x=>x.student===s.student&&x.week===s.week&&x.timestamp===s.timestamp))submissions.push(s);
   });
+  window._lararOvningar=ovnData||[];
   renderTeacherDash();
+}
+
+async function loadAllaOvningar(){
+  try{
+    const url=new URL(SHEETS_URL);
+    url.searchParams.set('action','getAllOvningar');
+    const r=await fetch(url.toString());
+    return await r.json();
+  }catch{return[];}
 }
 
 function mismatchDir(a){
@@ -2018,6 +2052,17 @@ async function openStudentModal(idx){
     <h3>${sub.student}</h3>
     <div class="modal-meta">Vecka ${sub.week} · ${sub.timestamp} · Score: ${sub.score}%</div>
     ${rows}
+    ${(()=>{
+      const elevOvn=(window._lararOvningar||[]).filter(o=>o.kodord===sub.student);
+      if(!elevOvn.length)return'';
+      return `<div style="margin-top:20px;">
+        <div style="font-family:'Fraunces',serif;font-size:.95rem;font-weight:700;margin-bottom:10px;">Övningshistorik</div>
+        ${elevOvn.slice(0,8).map(o=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--soft);font-size:.85rem;">
+          <div style="flex:1;"><div style="font-weight:500;">${o.amne}</div><div style="font-size:.75rem;color:var(--muted);">${o.datum} ${o.tid}</div></div>
+          <div style="font-weight:700;color:${(parseInt(o.pct)||0)>=80?'var(--green)':(parseInt(o.pct)||0)>=60?'#e08020':'var(--red)'};">${o.ratt}/${o.antal}</div>
+        </div>`).join('')}
+      </div>`;
+    })()}
     <button class="btn btn-outline btn-sm" style="margin-top:16px" onclick="closeModal()">Stäng</button>`;
 }
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
