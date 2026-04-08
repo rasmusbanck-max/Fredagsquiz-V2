@@ -2047,7 +2047,7 @@ function renderTeacherDash(){
   }
 
   // Bygg tabell med övningskolumn
-  const allOvn=window._lararOvningar||[];
+  const elevOvnData=window._lararOvningar||[];
   tableEl.innerHTML=`<table><thead><tr><th>Kodord</th><th>Vecka</th><th>Score</th><th>Övningar</th><th>Flaggor</th><th></th></tr></thead>
     <tbody>${submissions.map((s,i)=>{
       const cls=(parseInt(s.score)||0)>=70?'score-high':(parseInt(s.score)||0)>=40?'score-mid':'score-low';
@@ -2063,7 +2063,7 @@ function renderTeacherDash(){
         if(dir==='under2')chips.push(`<span class="flag-chip chip-under2">🔵 ${q?.subject||''}</span>`);
         if(dir==='under1')chips.push(`<span class="flag-chip chip-under1">○ ${q?.subject||''}</span>`);
       });
-      const elevOvn=allOvn.filter(o=>o.kodord===s.student);
+      const elevOvn=elevOvnData.filter(o=>o.kodord===s.student);
       const ovnHtml=elevOvn.length
         ? elevOvn.slice(0,3).map(o=>{
             const pct=typeof o.pct==='string'?parseInt(o.pct):o.pct||0;
