@@ -400,6 +400,11 @@
     <div class="tab-content" id="tabMal">
       <div class="mal-wrap" id="malWrap"></div>
     </div>
+
+    <!-- ÖVNINGAR -->
+    <div class="tab-content" id="tabOvningar">
+      <div id="ovningWrap"></div>
+    </div>
   </div>
 
   <div class="bottom-nav">
@@ -414,6 +419,9 @@
     </button>
     <button class="nav-tab" id="navMal" onclick="byttFlik('Mal')">
       <span class="nav-tab-icon">🎯</span>Mål
+    </button>
+    <button class="nav-tab" id="navOvningar" onclick="byttFlik('Ovningar')">
+      <span class="nav-tab-icon">🔢</span>Öva
     </button>
   </div>
 </div>
@@ -469,22 +477,34 @@ let currentStudent=null,currentQ=0,answers=[],selectedOption=null;
 let tipShown=[],pendingOpenAnswer=null,selfAssessLocked=false,quizStartTime=null;
 let submissions=[],malData={},malDirty=false,elevHistory=[];
 
-const MAL_STRUKTUR={
-  "DEL 1 – Materiens uppbyggnad":{
-    e:["Vet att allt består av materia","Vet att materia är uppbyggd av atomer","Kan skilja på atom och molekyl","Kan ge exempel på grundämne och kemisk förening"],
-    c:["Förklarar hur atomer bildar molekyler","Förklarar skillnaden mellan grundämne och kemisk förening","Använder begrepp korrekt i förklaringar","Kan rita och förklara en enkel partikelmodell"],
-    a:["Förklarar att atomer kan sättas ihop på olika sätt och att det gör att olika ämnen bildas","Jämför grundämne och kemisk förening på ett tydligt sätt","Använder partikelmodellen för att förklara egenskaper"]
+const CLASSROOM_URL="https://classroom.google.com/c/Nzc1MDExNTg1NzE2";
+
+const MAL_AMNEN={
+  "NO":{
+    icon:"🔬",
+    omraden:{
+      "Kemi – Materiens uppbyggnad och reaktioner":{
+        "DEL 1 – Materiens uppbyggnad":{
+          e:["Vet att allt består av materia","Vet att materia är uppbyggd av atomer","Kan skilja på atom och molekyl","Kan ge exempel på grundämne och kemisk förening"],
+          c:["Förklarar hur atomer bildar molekyler","Förklarar skillnaden mellan grundämne och kemisk förening","Använder begrepp korrekt i förklaringar","Kan rita och förklara en enkel partikelmodell"],
+          a:["Förklarar att atomer kan sättas ihop på olika sätt och att det gör att olika ämnen bildas","Jämför grundämne och kemisk förening på ett tydligt sätt","Använder partikelmodellen för att förklara egenskaper"]
+        },
+        "DEL 2 – Kemiska reaktioner & kolets kretslopp":{
+          e:["Vet att nya ämnen bildas i en kemisk reaktion","Kan beskriva kolets kretslopp i stora drag","Vet att människan påverkar klimatet"],
+          c:["Förklarar att samma atomer finns kvar efter reaktionen men ordnade på nytt sätt","Förklarar fotosyntes och förbränning med hjälp av begrepp","Förklarar hur fossila bränslen påverkar kolets kretslopp"],
+          a:["Jämför fotosyntes och förbränning","Resonerar om hur kolets kretslopp rubbas av människan","Drar slutsatser om långsiktiga konsekvenser"]
+        },
+        "DEL 3 – Återvinning och resursanvändning":{
+          e:["Vet vad återvinning är","Vet att metaller och plast kan återvinnas"],
+          c:["Förklarar varför återvinning sparar energi och råvaror","Förklarar skillnad mellan återanvändning och återvinning"],
+          a:["Resonerar kring miljöpåverkan av råvaruutvinning","Kopplar återvinning till kolets kretslopp och klimatpåverkan"]
+        }
+      }
+    }
   },
-  "DEL 2 – Kemiska reaktioner & kolets kretslopp":{
-    e:["Vet att nya ämnen bildas i en kemisk reaktion","Kan beskriva kolets kretslopp i stora drag","Vet att människan påverkar klimatet"],
-    c:["Förklarar att samma atomer finns kvar efter reaktionen men ordnade på nytt sätt","Förklarar fotosyntes och förbränning med hjälp av begrepp","Förklarar hur fossila bränslen påverkar kolets kretslopp"],
-    a:["Jämför fotosyntes och förbränning","Resonerar om hur kolets kretslopp rubbas av människan","Drar slutsatser om långsiktiga konsekvenser"]
-  },
-  "DEL 3 – Återvinning och resursanvändning":{
-    e:["Vet vad återvinning är","Vet att metaller och plast kan återvinnas"],
-    c:["Förklarar varför återvinning sparar energi och råvaror","Förklarar skillnad mellan återanvändning och återvinning"],
-    a:["Resonerar kring miljöpåverkan av råvaruutvinning","Kopplar återvinning till kolets kretslopp och klimatpåverkan"]
-  }
+  "Svenska":{icon:"📖",omraden:{}},
+  "Matematik":{icon:"📐",omraden:{}},
+  "Engelska":{icon:"🌍",omraden:{}}
 };
 
 function getWeekNumber(){
@@ -635,12 +655,20 @@ function renderHem(){
   const locked=isCodeLocked(currentStudent);
   const bannerEl=document.getElementById('hemQuizBanner');
   if(locked){
-    bannerEl.innerHTML=`<div class="no-quiz-banner"><p>✓ Du har gjort veckans quiz. Bra jobbat!</p></div>`;
+    bannerEl.innerHTML=`<div class="no-quiz-banner"><p>✓ Du har gjort veckans quiz. Bra jobbat!</p></div>
+    <a href="${CLASSROOM_URL}" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:white;border-radius:12px;padding:16px 20px;border-left:4px solid var(--accent2);text-decoration:none;color:var(--ink);margin-bottom:20px;">
+      <div><div style="font-family:'Fraunces',serif;font-weight:700;font-size:1rem;margin-bottom:2px;">Google Classroom</div><div style="font-size:.83rem;color:var(--muted);">Öppna klassrummet</div></div>
+      <span style="font-size:1.4rem;color:var(--accent2);">→</span>
+    </a>`;
   }else{
     bannerEl.innerHTML=`<div class="quiz-banner" onclick="byttFlik('Quiz')">
       <div class="quiz-banner-text"><h3>Veckans quiz är redo!</h3><p>Vecka ${currentWeek} · ${quizData.questions.length} frågor</p></div>
       <span class="quiz-banner-arrow">→</span>
-    </div>`;
+    </div>
+    <a href="${CLASSROOM_URL}" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:white;border-radius:12px;padding:16px 20px;border-left:4px solid var(--accent2);text-decoration:none;color:var(--ink);margin-bottom:20px;">
+      <div><div style="font-family:'Fraunces',serif;font-weight:700;font-size:1rem;margin-bottom:2px;">Google Classroom</div><div style="font-size:.83rem;color:var(--muted);">Öppna klassrummet</div></div>
+      <span style="font-size:1.4rem;color:var(--accent2);">→</span>
+    </a>`;
   }
 
   // Historik
@@ -705,60 +733,106 @@ function renderProfil(){
       }).join('')}
     </div>`:''}
     ${sorted.length>1?`<div class="section-card">
-      <h3>Historik</h3>
+      <h3>Historik fredagsquiz</h3>
       ${sorted.map(h=>`<div class="history-row">
         <span class="hw-week">v.${h.week}</span>
         <div class="hw-bar-wrap"><div class="hw-bar" style="width:${maxScore>0?((parseInt(h.score)||0)/maxScore)*100:0}%"></div></div>
         <span class="hw-score">${h.score}%</span>
       </div>`).join('')}
-    </div>`:''}`;
+    </div>`:''}
+    ${(()=>{
+      let mathHist=[];
+      try{mathHist=JSON.parse(localStorage.getItem(`fq_math_${currentStudent}`)||'[]');}catch{}
+      if(!mathHist.length)return'';
+      const typLabel={gang:'×',division:'÷',bada:'× ÷'};
+      return `<div class="section-card">
+        <h3>Senaste övningar</h3>
+        ${mathHist.slice(0,8).map(h=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--soft);">
+          <div style="flex:1;">
+            <div style="font-size:.85rem;font-weight:500;">${typLabel[h.typ]||''} Tabell ${h.tabeller.join(', ')} · ${h.antal} frågor</div>
+            <div style="font-size:.75rem;color:var(--muted);">${h.datum} ${h.tid}</div>
+          </div>
+          <div style="font-family:'Fraunces',serif;font-weight:700;color:${h.pct>=80?'var(--green)':h.pct>=60?'#e08020':'var(--red)'};">${h.ratt}/${h.antal}</div>
+        </div>`).join('')}
+      </div>`;
+    })()}`;
 }
 
 // ── MÅL ─────────────────────────────────────────────────────
+let aktivtMalAmne=Object.keys(MAL_AMNEN)[0];
+
 function renderMal(){
   const wrap=document.getElementById('malWrap');
+  const amnen=Object.keys(MAL_AMNEN);
+
+  // Ämnesflikar
   let html=`<div class="mal-header"><h2>Mina mål</h2><p>Bocka av det du kan – sparas automatiskt</p></div>`;
+  html+=`<div style="display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;">`;
+  amnen.forEach(amne=>{
+    const active=amne===aktivtMalAmne;
+    html+=`<button onclick="byttMalAmne('${amne}')" style="padding:8px 16px;border-radius:20px;border:2px solid ${active?'var(--ink)':'#ddd'};background:${active?'var(--ink)':'white'};color:${active?'var(--paper)':'var(--muted)'};font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;">${MAL_AMNEN[amne].icon} ${amne}</button>`;
+  });
+  html+=`</div>`;
 
-  Object.entries(MAL_STRUKTUR).forEach(([del,nivaer])=>{
-    const delKey=del.replace(/[^a-zA-Z0-9åäöÅÄÖ]/g,'_');
-    let totalItems=0,doneItems=0;
-    Object.entries(nivaer).forEach(([niva,items])=>{
-      items.forEach((_,idx)=>{
-        totalItems++;
-        const key=`${delKey}_${niva}_${idx}`;
-        if(malData[key])doneItems++;
+  const amneData=MAL_AMNEN[aktivtMalAmne];
+  const omraden=amneData.omraden;
+
+  if(!Object.keys(omraden).length){
+    html+=`<div style="text-align:center;padding:60px 20px;color:var(--muted);">
+      <div style="font-size:2rem;margin-bottom:12px;">${amneData.icon}</div>
+      <p>Inga mål tillagda för ${aktivtMalAmne} ännu.</p>
+    </div>`;
+    wrap.innerHTML=html;
+    return;
+  }
+
+  Object.entries(omraden).forEach(([omrade,delar])=>{
+    html+=`<div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px;font-weight:600;">${omrade}</div>`;
+    Object.entries(delar).forEach(([del,nivaer])=>{
+      const delKey=`${aktivtMalAmne}_${del}`.replace(/[^a-zA-Z0-9åäöÅÄÖ]/g,'_');
+      let totalItems=0,doneItems=0;
+      Object.entries(nivaer).forEach(([niva,items])=>{
+        items.forEach((_,idx)=>{
+          totalItems++;
+          const key=`${delKey}_${niva}_${idx}`;
+          if(malData[key])doneItems++;
+        });
       });
-    });
-    const pct=totalItems>0?Math.round((doneItems/totalItems)*100):0;
+      const pct=totalItems>0?Math.round((doneItems/totalItems)*100):0;
 
-    html+=`<div class="mal-del">
-      <div class="mal-del-header" onclick="toggleDel('${delKey}')">
-        <div class="mal-del-title">${del}</div>
-        <div class="mal-del-progress">
-          <div class="mal-del-bar"><div class="mal-del-fill" style="width:${pct}%"></div></div>
-          <span class="mal-del-pct">${pct}%</span>
+      html+=`<div class="mal-del">
+        <div class="mal-del-header" onclick="toggleDel('${delKey}')">
+          <div class="mal-del-title">${del}</div>
+          <div class="mal-del-progress">
+            <div class="mal-del-bar"><div class="mal-del-fill" style="width:${pct}%"></div></div>
+            <span class="mal-del-pct">${pct}%</span>
+          </div>
         </div>
-      </div>
-      <div class="mal-del-body" id="malbody_${delKey}" style="display:none;">`;
+        <div class="mal-del-body" id="malbody_${delKey}" style="display:none;">`;
 
-    Object.entries(nivaer).forEach(([niva,items])=>{
-      const nivaLabel={e:'Godkänt',c:'Utvecklat',a:'Välutvecklat'}[niva];
-      html+=`<div class="mal-niva niva-${niva}">
-        <div class="mal-niva-label">${nivaLabel}</div>`;
-      items.forEach((item,idx)=>{
-        const key=`${delKey}_${niva}_${idx}`;
-        const done=!!malData[key];
-        html+=`<div class="mal-item" onclick="toggleMal('${key}','${niva}')">
-          <div class="mal-check ${done?`done-${niva}`:''}"></div>
-          <div class="mal-text">${item}</div>
-        </div>`;
+      Object.entries(nivaer).forEach(([niva,items])=>{
+        const nivaLabel={e:'Godkänt',c:'Utvecklat',a:'Välutvecklat'}[niva];
+        html+=`<div class="mal-niva niva-${niva}"><div class="mal-niva-label">${nivaLabel}</div>`;
+        items.forEach((item,idx)=>{
+          const key=`${delKey}_${niva}_${idx}`;
+          const done=!!malData[key];
+          html+=`<div class="mal-item" onclick="toggleMal('${key}','${niva}')">
+            <div class="mal-check ${done?`done-${niva}`:''}"></div>
+            <div class="mal-text">${item}</div>
+          </div>`;
+        });
+        html+=`</div>`;
       });
-      html+=`</div>`;
+      html+=`</div></div>`;
     });
-    html+=`</div></div>`;
   });
 
   wrap.innerHTML=html;
+}
+
+function byttMalAmne(amne){
+  aktivtMalAmne=amne;
+  renderMal();
 }
 
 function toggleDel(delKey){
@@ -787,15 +861,228 @@ async function sparaMal(){
 function byttFlik(flik){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  const map={Hem:'tabHem',Quiz:'tabQuiz',Profil:'tabProfil',Mal:'tabMal'};
-  const navMap={Hem:'navHem',Quiz:'navQuiz',Profil:'navProfil',Mal:'navMal'};
+  const map={Hem:'tabHem',Quiz:'tabQuiz',Profil:'tabProfil',Mal:'tabMal',Ovningar:'tabOvningar'};
+  const navMap={Hem:'navHem',Quiz:'navQuiz',Profil:'navProfil',Mal:'navMal',Ovningar:'navOvningar'};
   document.getElementById(map[flik])?.classList.add('active');
   document.getElementById(navMap[flik])?.classList.add('active');
+  if(flik==='Ovningar')renderOvningar();
 }
 
 function visaProfil(){
   byttFlik('Profil');
   renderProfil();
+}
+
+// ── ÖVNINGAR / MATHQUIZ ──────────────────────────────────────
+let mq={aktiv:false,fragor:[],index:0,ratt:0,fel:0,installningar:null};
+
+function renderOvningar(){
+  const wrap=document.getElementById('ovningWrap');
+  if(mq.aktiv){renderMathQuizFraga();return;}
+  wrap.innerHTML=`
+    <div style="max-width:500px;margin:0 auto;padding:24px 20px 80px;">
+      <h2 style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;margin-bottom:4px;">Öva</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:28px;">Välj inställningar och kör igång</p>
+
+      <div style="background:white;border-radius:14px;padding:20px;margin-bottom:16px;">
+        <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:700;margin-bottom:16px;">🔢 Multiplikation & Division</div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Välj tabeller (0–12)</div>
+          <div id="tabelValjare" style="display:flex;flex-wrap:wrap;gap:6px;">
+            ${Array.from({length:13},(_,i)=>`
+              <button onclick="toggleTabell(${i})" id="tbl${i}" style="width:40px;height:40px;border-radius:8px;border:2px solid #ddd;background:white;font-family:'Fraunces',serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .15s;">${i}</button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Typ av uppgifter</div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="valjTyp('gang')" id="typGang" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">× Gånger</button>
+            <button onclick="valjTyp('division')" id="typDiv" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">÷ Division</button>
+            <button onclick="valjTyp('bada')" id="typBada" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">Båda</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Antal frågor</div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="valjAntal(10)" id="antal10" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">10</button>
+            <button onclick="valjAntal(20)" id="antal20" style="flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">20</button>
+          </div>
+        </div>
+
+        <button onclick="startaMathQuiz()" style="width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;">Kör igång →</button>
+        <div style="color:var(--red);font-size:.82rem;margin-top:8px;text-align:center;min-height:16px;" id="mathError"></div>
+      </div>
+
+      ${mq.installningar?`<div style="background:white;border-radius:14px;padding:16px 20px;">
+        <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:600;">Senaste resultat</div>
+        <div style="font-family:'Fraunces',serif;font-size:2rem;font-weight:900;color:var(--green);">${mq.ratt}/${mq.ratt+mq.fel}</div>
+        <div style="font-size:.82rem;color:var(--muted);">rätt av ${mq.ratt+mq.fel} frågor</div>
+      </div>`:''}
+    </div>`;
+
+  // Återställ knappar
+  mq.installningar=mq.installningar||{tabeller:[],typ:'gang',antal:10};
+  mq.installningar.tabeller.forEach(t=>toggleTabelBtn(t,true));
+  uppdateraTypBtns(mq.installningar.typ||'gang');
+  uppdateraAntalBtns(mq.installningar.antal||10);
+}
+
+function toggleTabell(n){
+  if(!mq.installningar)mq.installningar={tabeller:[],typ:'gang',antal:10};
+  const idx=mq.installningar.tabeller.indexOf(n);
+  if(idx>-1)mq.installningar.tabeller.splice(idx,1);
+  else mq.installningar.tabeller.push(n);
+  toggleTabelBtn(n,mq.installningar.tabeller.includes(n));
+}
+function toggleTabelBtn(n,on){
+  const btn=document.getElementById(`tbl${n}`);
+  if(!btn)return;
+  btn.style.background=on?'var(--ink)':'white';
+  btn.style.color=on?'var(--paper)':'var(--ink)';
+  btn.style.borderColor=on?'var(--ink)':'#ddd';
+}
+function valjTyp(typ){
+  if(!mq.installningar)mq.installningar={tabeller:[],typ:'gang',antal:10};
+  mq.installningar.typ=typ;
+  uppdateraTypBtns(typ);
+}
+function uppdateraTypBtns(typ){
+  ['gang','division','bada'].forEach(t=>{
+    const id={gang:'typGang',division:'typDiv',bada:'typBada'}[t];
+    const btn=document.getElementById(id);
+    if(!btn)return;
+    const on=t===typ;
+    btn.style.background=on?'var(--ink)':'white';
+    btn.style.color=on?'var(--paper)':'var(--muted)';
+    btn.style.borderColor=on?'var(--ink)':'#ddd';
+  });
+}
+function valjAntal(n){
+  if(!mq.installningar)mq.installningar={tabeller:[],typ:'gang',antal:10};
+  mq.installningar.antal=n;
+  uppdateraAntalBtns(n);
+}
+function uppdateraAntalBtns(n){
+  [10,20].forEach(x=>{
+    const btn=document.getElementById(`antal${x}`);
+    if(!btn)return;
+    const on=x===n;
+    btn.style.background=on?'var(--ink)':'white';
+    btn.style.color=on?'var(--paper)':'var(--muted)';
+    btn.style.borderColor=on?'var(--ink)':'#ddd';
+  });
+}
+
+function startaMathQuiz(){
+  const inst=mq.installningar||{};
+  if(!inst.tabeller||inst.tabeller.length===0){
+    document.getElementById('mathError').textContent='Välj minst en tabell.';return;
+  }
+  document.getElementById('mathError').textContent='';
+  mq.fragor=genereraFragor(inst.tabeller,inst.typ||'gang',inst.antal||10);
+  mq.index=0;mq.ratt=0;mq.fel=0;mq.aktiv=true;
+  renderMathQuizFraga();
+}
+
+function genereraFragor(tabeller,typ,antal){
+  const fragor=[];
+  for(let i=0;i<antal;i++){
+    const tabell=tabeller[Math.floor(Math.random()*tabeller.length)];
+    const annan=Math.floor(Math.random()*13);
+    let fraga,svar;
+    const gorDiv=typ==='division'||(typ==='bada'&&Math.random()>0.5);
+    if(gorDiv&&tabell>0){
+      const produkt=tabell*annan;
+      fraga=`${produkt} ÷ ${tabell}`;svar=annan;
+    }else{
+      fraga=`${tabell} × ${annan}`;svar=tabell*annan;
+    }
+    fragor.push({fraga,svar,anvSvar:null});
+  }
+  return fragor;
+}
+
+function renderMathQuizFraga(){
+  const wrap=document.getElementById('ovningWrap');
+  const q=mq.fragor[mq.index];
+  const total=mq.fragor.length;
+  const pct=Math.round((mq.index/total)*100);
+
+  if(mq.index>=total){
+    // Spara resultat till localStorage
+    mq.aktiv=false;
+    const pctRatt=Math.round((mq.ratt/total)*100);
+    try{
+      const hist=JSON.parse(localStorage.getItem(`fq_math_${currentStudent}`)||'[]');
+      hist.unshift({
+        datum:new Date().toLocaleDateString('sv-SE'),
+        tid:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}),
+        tabeller:mq.installningar.tabeller.sort((a,b)=>a-b),
+        typ:mq.installningar.typ,
+        antal:total,
+        ratt:mq.ratt,
+        pct:pctRatt
+      });
+      localStorage.setItem(`fq_math_${currentStudent}`,JSON.stringify(hist.slice(0,20)));
+    }catch{}
+    wrap.innerHTML=`<div style="max-width:500px;margin:0 auto;padding:40px 20px;text-align:center;">
+      <div style="font-size:3rem;margin-bottom:16px;">${pctRatt>=80?'🏆':pctRatt>=60?'👍':'💪'}</div>
+      <div style="font-family:'Fraunces',serif;font-size:2.5rem;font-weight:900;color:var(--green);margin-bottom:4px;">${mq.ratt}/${total}</div>
+      <div style="color:var(--muted);margin-bottom:32px;">rätt av ${total} frågor (${pctRatt}%)</div>
+      <div style="background:white;border-radius:14px;padding:16px;margin-bottom:20px;">
+        ${mq.fragor.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--soft);font-size:.9rem;">
+          <span>${f.fraga} = ?</span>
+          <span style="font-weight:600;color:${f.anvSvar===f.svar?'var(--green)':'var(--red)'};">${f.anvSvar===f.svar?'✓':'✗'} ${f.svar}</span>
+        </div>`).join('')}
+      </div>
+      <button onclick="renderOvningar()" style="width:100%;padding:14px;background:var(--ink);color:var(--paper);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;margin-bottom:10px;">Försök igen</button>
+      <button onclick="byttFlik('Profil');renderProfil()" style="width:100%;padding:14px;background:transparent;border:2px solid var(--ink);color:var(--ink);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;">Se statistik →</button>
+    </div>`;
+    return;
+  }
+
+  wrap.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:24px 20px 80px;">
+    <div style="height:4px;background:var(--soft);border-radius:4px;margin-bottom:24px;overflow:hidden;">
+      <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;transition:width .3s;"></div>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px;">Fråga ${mq.index+1} av ${total} · ✓ ${mq.ratt} ✗ ${mq.fel}</div>
+    <div style="font-family:'Fraunces',serif;font-size:3rem;font-weight:900;margin:32px 0;text-align:center;">${q.fraga} = ?</div>
+    <input type="number" id="mathSvar" placeholder="Ditt svar" autofocus
+      style="width:100%;padding:16px;font-size:1.4rem;font-family:'Fraunces',serif;text-align:center;border:2px solid var(--ink);border-radius:12px;background:white;outline:none;margin-bottom:12px;"
+      onkeydown="if(event.key==='Enter')svara()">
+    <button onclick="svara()" style="width:100%;padding:14px;background:var(--ink);color:var(--paper);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;">Svara →</button>
+    <div style="text-align:center;margin-top:12px;">
+      <button onclick="avslutaMath()" style="background:none;border:none;color:var(--muted);font-size:.82rem;cursor:pointer;">Avsluta</button>
+    </div>
+  </div>`;
+  setTimeout(()=>document.getElementById('mathSvar')?.focus(),100);
+}
+
+function svara(){
+  const inp=document.getElementById('mathSvar');
+  if(!inp||inp.value==='')return;
+  const anvSvar=parseInt(inp.value);
+  const q=mq.fragor[mq.index];
+  q.anvSvar=anvSvar;
+  if(anvSvar===q.svar)mq.ratt++;
+  else mq.fel++;
+  mq.index++;
+
+  // Snabb feedback
+  const btn=document.querySelector('#ovningWrap button');
+  inp.style.borderColor=anvSvar===q.svar?'var(--green)':'var(--red)';
+  inp.style.background=anvSvar===q.svar?'#e6f7f1':'#fdf0f0';
+  inp.disabled=true;
+  setTimeout(()=>renderMathQuizFraga(),400);
+}
+
+function avslutaMath(){
+  mq.aktiv=false;
+  renderOvningar();
 }
 
 // ── QUIZ ─────────────────────────────────────────────────────
