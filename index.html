@@ -450,6 +450,8 @@
         <div id="kodordPanel"></div>
         <div class="section-title">Övningar – klassöversikt</div>
         <div id="ovningOversikt" style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;color:var(--muted);font-size:.88rem;">Laddar...</div>
+        <div class="section-title">Svåraste frågorna</div>
+        <div id="svaragteFragor"></div>
         <div class="section-title">Alla inlämningar</div>
         <div class="student-table" id="studentTable"></div>
       </div>
@@ -2007,7 +2009,46 @@ function renderTeacherDash(){
   }
   const tableEl=document.getElementById('studentTable');
   if(!n){tableEl.innerHTML=`<div class="no-results">Inga inlämningar än.</div>`;return;}
-  tableEl.innerHTML=`<table><thead><tr><th>Kodord</th><th>Vecka</th><th>Tid</th><th>Score</th><th>Flaggor</th><th></th></tr></thead>
+
+  // Svåraste frågorna per ämne från fredagsquizet
+  const fragaSvarsdata={};
+  submissions.forEach(s=>{
+    (s.answers||[]).forEach(a=>{
+      const q=quizData.questions.find(q=>q.id===a.qId);if(!q)return;
+      const key=`${q.subject}__${q.id}`;
+      if(!fragaSvarsdata[key])fragaSvarsdata[key]={q,ratt:0,fel:0};
+      if(a.score>=0.9)fragaSvarsdata[key].ratt++;
+      else fragaSvarsdata[key].fel++;
+    });
+  });
+  const svarasteFragor=Object.values(fragaSvarsdata)
+    .filter(d=>d.ratt+d.fel>0)
+    .map(d=>({...d,felPct:Math.round((d.fel/(d.ratt+d.fel))*100)}))
+    .sort((a,b)=>b.felPct-a.felPct)
+    .slice(0,5);
+
+  const svEl=document.getElementById('svaragteFragor');
+  if(svEl&&svarasteFragor.length){
+    svEl.innerHTML=`<div style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;">
+      ${svarasteFragor.map(d=>{
+        const col=d.felPct>=70?'var(--red)':d.felPct>=40?'#e08020':'var(--green)';
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--soft);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+            <div style="font-size:.82rem;font-weight:600;">${d.q.subject} – ${d.q.text.length>60?d.q.text.slice(0,60)+'…':d.q.text}</div>
+            <div style="font-weight:700;color:${col};flex-shrink:0;">${d.felPct}% fel</div>
+          </div>
+          <div style="height:6px;background:var(--soft);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:${d.felPct}%;background:${col};border-radius:3px;"></div>
+          </div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:3px;">${d.ratt} rätt · ${d.fel} fel av ${d.ratt+d.fel} elever</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // Bygg tabell med övningskolumn
+  const allOvn=window._lararOvningar||[];
+  tableEl.innerHTML=`<table><thead><tr><th>Kodord</th><th>Vecka</th><th>Score</th><th>Övningar</th><th>Flaggor</th><th></th></tr></thead>
     <tbody>${submissions.map((s,i)=>{
       const cls=(parseInt(s.score)||0)>=70?'score-high':(parseInt(s.score)||0)>=40?'score-mid':'score-low';
       const chips=[];
@@ -2022,11 +2063,19 @@ function renderTeacherDash(){
         if(dir==='under2')chips.push(`<span class="flag-chip chip-under2">🔵 ${q?.subject||''}</span>`);
         if(dir==='under1')chips.push(`<span class="flag-chip chip-under1">○ ${q?.subject||''}</span>`);
       });
+      const elevOvn=allOvn.filter(o=>o.kodord===s.student);
+      const ovnHtml=elevOvn.length
+        ? elevOvn.slice(0,3).map(o=>{
+            const pct=typeof o.pct==='string'?parseInt(o.pct):o.pct||0;
+            const col=pct>=80?'var(--green)':pct>=60?'#e08020':'var(--red)';
+            return `<span style="font-size:.75rem;margin-right:4px;color:${col};">●</span><span style="font-size:.75rem;">${o.amne.split(' ')[0]} ${o.ratt}/${o.antal}</span><br>`;
+          }).join('')
+        : `<span style="color:var(--muted);font-size:.75rem;">inga</span>`;
       return `<tr class="clickable" onclick="openStudentModal(${i})">
-        <td><strong>${s.student}</strong></td>
+        <td><strong>${s.student}</strong><br><span style="font-size:.72rem;color:var(--muted);">${s.timestamp}</span></td>
         <td style="color:var(--muted);font-size:.82rem">v.${s.week}</td>
-        <td style="color:var(--muted);font-size:.82rem">${s.timestamp}</td>
         <td><span class="score-pill ${cls}">${s.score}%</span></td>
+        <td style="line-height:1.6">${ovnHtml}</td>
         <td>${chips.length?chips.join(''):'<span style="color:var(--muted);font-size:.78rem">inga</span>'}</td>
         <td style="color:var(--muted);font-size:.78rem">Visa →</td>
       </tr>`;
