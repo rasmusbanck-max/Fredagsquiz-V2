@@ -2007,8 +2007,6 @@ function renderTeacherDash(){
     });
     ovnEl.innerHTML=ovnHtml;
   }
-  const tableEl=document.getElementById('studentTable');
-  if(!n){tableEl.innerHTML=`<div class="no-results">Inga inlämningar än.</div>`;return;}
 
   // Svåraste frågorna per ämne från fredagsquizet
   const fragaSvarsdata={};
@@ -2026,33 +2024,46 @@ function renderTeacherDash(){
     .map(d=>({...d,felPct:Math.round((d.fel/(d.ratt+d.fel))*100)}))
     .sort((a,b)=>b.felPct-a.felPct)
     .slice(0,5);
-
   const svEl=document.getElementById('svaragteFragor');
-  if(svEl&&svarasteFragor.length){
-    svEl.innerHTML=`<div style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;">
-      ${svarasteFragor.map(d=>{
-        const col=d.felPct>=70?'var(--red)':d.felPct>=40?'#e08020':'var(--green)';
-        return `<div style="padding:8px 0;border-bottom:1px solid var(--soft);">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
-            <div style="font-size:.82rem;font-weight:600;">${d.q.subject} – ${d.q.text.length>60?d.q.text.slice(0,60)+'…':d.q.text}</div>
-            <div style="font-weight:700;color:${col};flex-shrink:0;">${d.felPct}% fel</div>
-          </div>
-          <div style="height:6px;background:var(--soft);border-radius:3px;overflow:hidden;">
-            <div style="height:100%;width:${d.felPct}%;background:${col};border-radius:3px;"></div>
-          </div>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:3px;">${d.ratt} rätt · ${d.fel} fel av ${d.ratt+d.fel} elever</div>
-        </div>`;
-      }).join('')}
-    </div>`;
+  if(svEl){
+    svEl.innerHTML=svarasteFragor.length
+      ? `<div style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;">
+          ${svarasteFragor.map(d=>{
+            const col=d.felPct>=70?'var(--red)':d.felPct>=40?'#e08020':'var(--green)';
+            return `<div style="padding:8px 0;border-bottom:1px solid var(--soft);">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+                <div style="font-size:.82rem;font-weight:600;">${d.q.subject} – ${d.q.text.length>60?d.q.text.slice(0,60)+'…':d.q.text}</div>
+                <div style="font-weight:700;color:${col};flex-shrink:0;">${d.felPct}% fel</div>
+              </div>
+              <div style="height:6px;background:var(--soft);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:${d.felPct}%;background:${col};border-radius:3px;"></div>
+              </div>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:3px;">${d.ratt} rätt · ${d.fel} fel av ${d.ratt+d.fel} elever</div>
+            </div>`;
+          }).join('')}
+        </div>`
+      : `<div style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;color:var(--muted);font-size:.88rem;">Visas när elever gjort fredagsquiz.</div>`;
   }
 
-  // Bygg tabell med övningskolumn
+  // Övningar per elev – separat tabell ovanför inlämningar
   const elevOvnData=window._lararOvningar||[];
-  tableEl.innerHTML=`<table><thead><tr><th>Kodord</th><th>Vecka</th><th>Score</th><th>Övningar</th><th>Flaggor</th><th></th></tr></thead>
-    <tbody>${submissions.map((s,i)=>{
-      const cls=(parseInt(s.score)||0)>=70?'score-high':(parseInt(s.score)||0)>=40?'score-mid':'score-low';
+  const parsePct=v=>typeof v==='string'?parseInt(v):Number(v)||0;
+  const alleElever=[...new Set([
+    ...submissions.map(s=>s.student),
+    ...elevOvnData.map(o=>o.kodord)
+  ])].sort();
+
+  const tableEl=document.getElementById('studentTable');
+  if(!alleElever.length){tableEl.innerHTML=`<div class="no-results">Inga inlämningar än.</div>`;return;}
+
+  tableEl.innerHTML=`<table><thead><tr><th>Kodord</th><th>Quiz v.${currentWeek}</th><th>Score</th><th>Övningar</th><th>Flaggor</th><th></th></tr></thead>
+    <tbody>${alleElever.map(kodord=>{
+      const sub=submissions.find(s=>s.student===kodord);
+      const subIdx=submissions.indexOf(sub);
+      const elevOvn=elevOvnData.filter(o=>o.kodord===kodord);
+      const cls=sub?(parseInt(sub.score)||0)>=70?'score-high':(parseInt(sub.score)||0)>=40?'score-mid':'score-low':'';
       const chips=[];
-      (s.answers||[]).forEach(a=>{
+      (sub?.answers||[]).forEach(a=>{
         const q=quizData.questions.find(q=>q.id===a.qId);
         if(a.usedTip)chips.push(`<span class="flag-chip chip-tip">💡 tips</span>`);
         if(a.komplettering)chips.push(`<span class="flag-chip chip-komp">✏ komp.</span>`);
@@ -2063,21 +2074,20 @@ function renderTeacherDash(){
         if(dir==='under2')chips.push(`<span class="flag-chip chip-under2">🔵 ${q?.subject||''}</span>`);
         if(dir==='under1')chips.push(`<span class="flag-chip chip-under1">○ ${q?.subject||''}</span>`);
       });
-      const elevOvn=elevOvnData.filter(o=>o.kodord===s.student);
       const ovnHtml=elevOvn.length
         ? elevOvn.slice(0,3).map(o=>{
-            const pct=typeof o.pct==='string'?parseInt(o.pct):o.pct||0;
+            const pct=parsePct(o.pct);
             const col=pct>=80?'var(--green)':pct>=60?'#e08020':'var(--red)';
-            return `<span style="font-size:.75rem;margin-right:4px;color:${col};">●</span><span style="font-size:.75rem;">${o.amne.split(' ')[0]} ${o.ratt}/${o.antal}</span><br>`;
-          }).join('')
+            return `<div style="font-size:.75rem;margin-bottom:2px;"><span style="color:${col};font-weight:700;">${pct}%</span> ${o.amne.split('–')[0].trim()} <span style="color:var(--muted);">${o.ratt}/${o.antal}</span></div>`;
+          }).join('')+(elevOvn.length>3?`<div style="font-size:.72rem;color:var(--muted);">+${elevOvn.length-3} till</div>`:'')
         : `<span style="color:var(--muted);font-size:.75rem;">inga</span>`;
-      return `<tr class="clickable" onclick="openStudentModal(${i})">
-        <td><strong>${s.student}</strong><br><span style="font-size:.72rem;color:var(--muted);">${s.timestamp}</span></td>
-        <td style="color:var(--muted);font-size:.82rem">v.${s.week}</td>
-        <td><span class="score-pill ${cls}">${s.score}%</span></td>
-        <td style="line-height:1.6">${ovnHtml}</td>
-        <td>${chips.length?chips.join(''):'<span style="color:var(--muted);font-size:.78rem">inga</span>'}</td>
-        <td style="color:var(--muted);font-size:.78rem">Visa →</td>
+      return `<tr class="${sub?'clickable':''}" ${sub?`onclick="openStudentModal(${subIdx})"`:''}>
+        <td><strong>${PLANET_EMOJI[kodord]||''} ${kodord}</strong></td>
+        <td>${sub?`<span style="font-size:.78rem;color:var(--muted);">${sub.timestamp}</span>`:'<span style="color:var(--muted);font-size:.78rem;">ej gjort</span>'}</td>
+        <td>${sub?`<span class="score-pill ${cls}">${sub.score}%</span>`:'—'}</td>
+        <td>${ovnHtml}</td>
+        <td>${chips.length?chips.join(''):'<span style="color:var(--muted);font-size:.78rem">—</span>'}</td>
+        <td style="color:var(--muted);font-size:.78rem">${sub?'Visa →':''}</td>
       </tr>`;
     }).join('')}</tbody></table>`;
 }
