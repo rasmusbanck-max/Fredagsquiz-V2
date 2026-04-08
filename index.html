@@ -448,6 +448,8 @@
         <div class="insights-grid" id="insightsGrid"></div>
         <div class="section-title">Kodord denna vecka</div>
         <div id="kodordPanel"></div>
+        <div class="section-title">Övningar – klassöversikt</div>
+        <div id="ovningOversikt" style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;color:var(--muted);font-size:.88rem;">Laddar...</div>
         <div class="section-title">Alla inlämningar</div>
         <div class="student-table" id="studentTable"></div>
       </div>
@@ -738,11 +740,17 @@ function renderProfil(){
   // Övningsstatistik per ämne
   const ovnAmnen={};
   ovningHistory.forEach(h=>{
+    const pct=typeof h.pct==='string'?parseInt(h.pct):h.pct||0;
     if(!ovnAmnen[h.amne])ovnAmnen[h.amne]={total:0,sumPct:0,count:0};
     ovnAmnen[h.amne].total+=h.antal||0;
-    ovnAmnen[h.amne].sumPct+=h.pct||0;
+    ovnAmnen[h.amne].sumPct+=pct;
     ovnAmnen[h.amne].count++;
   });
+
+  const avgOvningFixed=harOvningar?Math.round(ovningHistory.reduce((s,h)=>{
+    const pct=typeof h.pct==='string'?parseInt(h.pct):h.pct||0;
+    return s+pct;
+  },0)/ovningHistory.length):null;
 
   wrap.innerHTML=`
     <div class="profil-hero">
@@ -753,7 +761,7 @@ function renderProfil(){
     <div class="profil-grid">
       <div class="profil-stat"><div class="ps-label">Quiz snitt</div><div class="ps-value">${avgScore!=null?avgScore+'%':'—'}</div><div class="ps-sub">fredagsquiz</div></div>
       <div class="profil-stat"><div class="ps-label">Bäst quiz</div><div class="ps-value" style="color:var(--green)">${bestScore!=null?bestScore+'%':'—'}</div><div class="ps-sub">bästa vecka</div></div>
-      <div class="profil-stat"><div class="ps-label">Övn. snitt</div><div class="ps-value">${avgOvning!=null?avgOvning+'%':'—'}</div><div class="ps-sub">${harOvningar?ovningHistory.length+' övningar':'inga ännu'}</div></div>
+      <div class="profil-stat"><div class="ps-label">Övn. snitt</div><div class="ps-value">${avgOvningFixed!=null?avgOvningFixed+'%':'—'}</div><div class="ps-sub">${harOvningar?ovningHistory.length+' övningar':'inga ännu'}</div></div>
     </div>
     ${Object.keys(subjects).length?`<div class="section-card">
       <h3>Senaste quizet per ämne</h3>
@@ -770,7 +778,7 @@ function renderProfil(){
       ${Object.entries(ovnAmnen).map(([amne,d],i)=>{
         const snitt=Math.round(d.sumPct/d.count);
         return `<div class="bar-row">
-          <div class="bar-label"><span>${amne}</span><span>${snitt}% snitt · ${d.count} gånger</span></div>
+          <div class="bar-label"><span>${amne}</span><span>${snitt}% snitt · ${d.count} ${d.count===1?'gång':'gånger'}</span></div>
           <div class="bar-track"><div class="bar-fill" style="width:${snitt}%;background:${colors[i%colors.length]}"></div></div>
         </div>`;
       }).join('')}
@@ -1960,10 +1968,43 @@ function renderTeacherDash(){
   document.getElementById('teacherSubtitle').textContent=`Vecka ${currentWeek} · ${n} inlämning${n!==1?'ar':''}`;
   const avgScore=n?Math.round(submissions.reduce((s,r)=>s+(parseInt(r.score)||0),0)/n):0;
   const mismatchCount=n?submissions.reduce((s,sub)=>s+(sub.answers||[]).filter(a=>mismatchDir(a)).length,0):0;
+  const ovnTotal=(window._lararOvningar||[]).length;
+  const ovnElever=new Set((window._lararOvningar||[]).map(o=>o.kodord)).size;
   document.getElementById('insightsGrid').innerHTML=`
     <div class="insight-card"><div class="card-label">Inlämnat</div><div class="card-value">${n}</div><div class="card-sub">elever</div></div>
     <div class="insight-card"><div class="card-label">Snittscore</div><div class="card-value">${n?avgScore+'%':'—'}</div><div class="card-sub">av klassen</div></div>
     <div class="insight-card"><div class="card-label">Självbed. avviker</div><div class="card-value">${mismatchCount}</div><div class="card-sub">fall totalt</div></div>`;
+
+  // Övningsöversikt
+  const ovnEl=document.getElementById('ovningOversikt');
+  const allOvn=window._lararOvningar||[];
+  if(!allOvn.length){
+    ovnEl.innerHTML=`<span style="color:var(--muted)">Inga övningar gjorda än.</span>`;
+  }else{
+    const amneStats={};
+    allOvn.forEach(o=>{
+      const pct=typeof o.pct==='string'?parseInt(o.pct):Number(o.pct)||0;
+      if(!amneStats[o.amne])amneStats[o.amne]={count:0,sumPct:0,elever:[]};
+      amneStats[o.amne].count++;
+      amneStats[o.amne].sumPct+=pct;
+      if(!amneStats[o.amne].elever.includes(o.kodord))amneStats[o.amne].elever.push(o.kodord);
+    });
+    const unikaElever=new Set(allOvn.map(o=>o.kodord)).size;
+    let ovnHtml=`<div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+      <div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:2px;">Totalt gjorda</div><div style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;">${allOvn.length}</div></div>
+      <div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:2px;">Aktiva elever</div><div style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;">${unikaElever}</div></div>
+    </div>`;
+    Object.entries(amneStats).forEach(([amne,d])=>{
+      const snitt=Math.round(d.sumPct/d.count);
+      const col=snitt>=80?'var(--green)':snitt>=60?'#e08020':'var(--red)';
+      ovnHtml+=`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--soft);">
+        <div style="flex:1;font-size:.88rem;font-weight:500;">${amne}</div>
+        <div style="font-size:.78rem;color:var(--muted);">${d.elever.length} elever · ${d.count} ggr</div>
+        <div style="font-family:'Fraunces',serif;font-weight:700;color:${col};">${snitt}%</div>
+      </div>`;
+    });
+    ovnEl.innerHTML=ovnHtml;
+  }
   const tableEl=document.getElementById('studentTable');
   if(!n){tableEl.innerHTML=`<div class="no-results">Inga inlämningar än.</div>`;return;}
   tableEl.innerHTML=`<table><thead><tr><th>Kodord</th><th>Vecka</th><th>Tid</th><th>Score</th><th>Flaggor</th><th></th></tr></thead>
