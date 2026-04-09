@@ -1295,7 +1295,6 @@ function renderElevMeddelanden(){
       </div>`).join('')
     :'<div style="text-align:center;padding:40px 20px;color:var(--muted);"><div style="font-size:2rem;margin-bottom:12px;">✉️</div><p>Inga meddelanden än. Skriv till din lärare!</p></div>'}`;
 }
-}
 
 function visaProfil(){
   byttFlik('Profil');
@@ -2628,7 +2627,7 @@ function renderTeacherDash(){
       </div>`;
     });
     ovnEl.innerHTML=ovnHtml;
-  }
+    } // stänger else
   } // stänger if(ovnEl)
 
   // Svåraste frågorna per ämne från fredagsquizet
