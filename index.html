@@ -502,7 +502,9 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="svarModal" onclick="if(event.target===this)closeSvarModal()">
+<div class="modal-overlay" id="granskningModal" onclick="if(event.target===this)closeGranskningModal()">
+  <div class="modal" style="max-width:540px;" id="granskningModalContent"></div>
+</div>
   <div class="modal" style="max-width:480px;">
     <h3 style="margin-bottom:4px;" id="svarModalTitel">Svara</h3>
     <div style="color:var(--muted);font-size:.82rem;margin-bottom:12px;" id="svarModalMeta"></div>
@@ -595,7 +597,7 @@ const quizData={week:currentWeek,questions:[
       c:{example:"\"En berättande text har en handling och karaktärer som man följer, till exempel en roman. En förklarande text beskriver hur eller varför något fungerar, till exempel ett avsnitt i en lärobok om hur kroppen fungerar.\""},
       a:{example:"\"Berättande texter vill engagera läsaren i en historia med karaktärer och händelser, som i en roman eller saga. Förklarande texter vill ge läsaren kunskap om hur eller varför något fungerar, som ett faktablad om rymden. Skillnaden handlar alltså om vad texten vill åstadkomma hos den som läser.\""}
     },
-    aiRubric:"Bedöm elevsvaret på frågan om berättande och förklarande text. VIKTIGT: Exempel måste vara faktiska skriftliga texttyper (bok, roman, faktablad, recept, instruktion, artikel etc). Muntliga situationer som 'läraren förklarar' eller 'när någon berättar' är INTE exempel på texttyper och ska ge lägre bedömning. 'a'=tydlig förklaring av båda texttypers syfte plus träffsäkra skriftliga exempel, 'c'=förklarar skillnaden och ger skriftliga exempel men utan djupare analys, 'e'=nämner att de är olika men exemplen är svaga, felaktiga eller saknas, 'wrong'=missförstår helt eller svarar inte. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\"}"},
+    aiRubric:"Bedöm elevsvaret på frågan om berättande och förklarande text. VIKTIGT: Exempel måste vara faktiska skriftliga texttyper (bok, roman, faktablad, recept, instruktion, artikel etc). Muntliga situationer som 'läraren förklarar' eller 'när någon berättar' är INTE exempel på texttyper och ska ge lägre bedömning. 'a'=tydlig förklaring av båda texttypers syfte plus träffsäkra skriftliga exempel, 'c'=förklarar skillnaden och ger skriftliga exempel men utan djupare analys, 'e'=nämner att de är olika men exemplen är svaga, felaktiga eller saknas, 'wrong'=missförstår helt eller svarar inte. Sätt saker=false om svaret är tvetydigt, blandar nivåer, eller om du är osäker på bedömningen. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\",\"saker\":true}"},
   {id:3,subject:"NO",type:"multiple",
     text:"Vilket av dessa är ett exempel på ett ekosystem?",
     options:["En sten i skogen","En sjö med växter, djur och mikroorganismer","Solsystemet","En fotosyntesreaktion"],
@@ -607,7 +609,7 @@ const quizData={week:currentWeek,questions:[
     text:"Lisa cyklar 3 km på 12 minuter. Hur lång tid tar det henne att cykla 10 km? Visa hur du tänker.",
     tip:"Börja med att räkna ut hur lång tid det tar per kilometer.",
     facit:"3 km på 12 min → 1 km tar 4 min. 10 km × 4 min = 40 minuter.",
-    aiRubric:"Rätt svar är 40 minuter. Bedöm elevsvaret strängt: 'a'=rätt svar (40 min) med tydligt räknesätt eller resonemang, 'c'=rätt svar men utan resonemang, 'e'=fel svar men visar relevant matematiskt tänkande, 'wrong'=fel svar utan räknesätt, nonsens-svar, svar som inte är numeriska, eller svar som inte försöker lösa uppgiften. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\"}"},
+    aiRubric:"Rätt svar är 40 minuter. Bedöm elevsvaret strängt: 'a'=rätt svar (40 min) med tydligt räknesätt eller resonemang, 'c'=rätt svar men utan resonemang, 'e'=fel svar men visar relevant matematiskt tänkande, 'wrong'=fel svar utan räknesätt, nonsens-svar, svar som inte är numeriska, eller svar som inte försöker lösa uppgiften. Sätt saker=false om svaret är oklart eller svårtolkat. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\",\"saker\":true}"},
   {id:5,subject:"Svenska",type:"multiple",
     text:"Vilket ord är ett substantiv?",
     options:["Snabbt","Springa","Träd","Grön"],correct:2,
@@ -1266,10 +1268,10 @@ const NO_FRAGOR=[
   {typ:"multiselect",fraga:"Vilka av dessa är grundämnen?",alternativ:["Järn (Fe)","Vatten (H₂O)","Syre (O)","Salt (NaCl)","Kol (C)"],ratt:[0,2,4]},
   {typ:"multiselect",fraga:"Vad behöver växter för att utföra fotosyntes?",alternativ:["Solljus","Syre","Koldioxid","Kväve","Vatten"],ratt:[0,2,4]},
   {typ:"multiselect",fraga:"Vad ingår i kolets kretslopp?",alternativ:["Fotosyntes","Förbränning","Cellandning","Vattencykel","Nedbrytning"],ratt:[0,1,2,4]},
-  {typ:"oppet",fraga:"Förklara vad som händer med atomerna i en kemisk reaktion.",aiRubric:"Bedöm svaret: 'a'=tydlig förklaring att atomerna finns kvar men ordnas om och bildar nya ämnen, 'c'=nämner att atomer ordnas om men otydligt, 'e'=nämner att nya ämnen bildas men förklarar inte atomerna, 'wrong'=fel eller inget svar. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\"}"},
-  {typ:"oppet",fraga:"Förklara skillnaden mellan fotosyntes och cellandning.",aiRubric:"Bedöm svaret: 'a'=tydlig jämförelse med rätt riktning och ämnen för båda processerna, 'c'=förklarar båda men missar något viktigt, 'e'=förklarar en av processerna korrekt, 'wrong'=fel eller blandar ihop. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\"}"},
-  {typ:"oppet",fraga:"Varför är återvinning bra för miljön? Ge minst två anledningar.",aiRubric:"Bedöm svaret: 'a'=två tydliga anledningar med förklaring, 'c'=en tydlig anledning eller två ytliga, 'e'=nämner att det är bra utan förklaring, 'wrong'=inget relevant. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\"}"},
-  {typ:"oppet",fraga:"Vad är skillnaden mellan ett grundämne och en kemisk förening? Ge ett exempel på vardera.",aiRubric:"Bedöm svaret: 'a'=tydlig skillnad med korrekta exempel för båda, 'c'=förklarar skillnaden men exempel saknas eller är svaga, 'e'=nämner ett av begreppen korrekt, 'wrong'=fel eller inget svar. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\"}"}
+  {typ:"oppet",fraga:"Förklara vad som händer med atomerna i en kemisk reaktion.",aiRubric:"Bedöm svaret: 'a'=tydlig förklaring att atomerna finns kvar men ordnas om och bildar nya ämnen, 'c'=nämner att atomer ordnas om men otydligt, 'e'=nämner att nya ämnen bildas men förklarar inte atomerna, 'wrong'=fel eller inget svar. Sätt saker=false om svaret är tvetydigt eller svårt att placera. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\",\"saker\":true}"},
+  {typ:"oppet",fraga:"Förklara skillnaden mellan fotosyntes och cellandning.",aiRubric:"Bedöm svaret: 'a'=tydlig jämförelse med rätt riktning och ämnen för båda processerna, 'c'=förklarar båda men missar något viktigt, 'e'=förklarar en av processerna korrekt, 'wrong'=fel eller blandar ihop. Sätt saker=false om svaret är tvetydigt. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\",\"saker\":true}"},
+  {typ:"oppet",fraga:"Varför är återvinning bra för miljön? Ge minst två anledningar.",aiRubric:"Bedöm svaret: 'a'=två tydliga anledningar med förklaring, 'c'=en tydlig anledning eller två ytliga, 'e'=nämner att det är bra utan förklaring, 'wrong'=inget relevant. Sätt saker=false om du är osäker. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\",\"saker\":true}"},
+  {typ:"oppet",fraga:"Vad är skillnaden mellan ett grundämne och en kemisk förening? Ge ett exempel på vardera.",aiRubric:"Bedöm svaret: 'a'=tydlig skillnad med korrekta exempel för båda, 'c'=förklarar skillnaden men exempel saknas eller är svaga, 'e'=nämner ett av begreppen korrekt, 'wrong'=fel eller inget svar. Sätt saker=false om du är osäker. JSON utan markdown: {\"level\":\"c\",\"reason\":\"max 15 ord svenska\",\"saker\":true}"}
 ];
 
 const AMNE_FRAGBANKER={
@@ -1528,7 +1530,8 @@ async function svaraOppet(){
   q._ratt=ratt;
   if(ratt)aq.ratt++;else aq.fel++;
   const nivaLabel={a:'Välutvecklat',c:'Utvecklat',e:'Godkänt',wrong:'Inte riktigt'}[result.level||'wrong'];
-  visaAqFeedback(ratt,`AI: ${nivaLabel}${result.reason?` · ${result.reason}`:''}`);
+  const osakerText=result.saker===false?' · ⚠️ Din lärare kollar detta svar':'';
+  visaAqFeedback(ratt,`AI: ${nivaLabel}${result.reason?` · ${result.reason}`:''}${osakerText}`);
   setTimeout(()=>{aq.index++;renderAmnesQuizFraga();},2500);
 }
 
@@ -1940,7 +1943,7 @@ async function setSelfAssess(level,btn){
   answers.push(aObj);
   if(q.aiRubric){
     aObj._aiPromise=gradeWithAI(q,pendingOpenAnswer).then(r=>{
-      aObj.aiLevel=r.level;aObj.aiReason=r.reason;aObj.aiDone=true;
+      aObj.aiLevel=r.level;aObj.aiReason=r.reason;aObj.aiSaker=r.saker;aObj.aiDone=true;
       const nextBtn=document.getElementById('nextBtn');
       if(nextBtn&&nextBtn.dataset.waiting==='ai'){
         nextBtn.disabled=false;nextBtn.innerHTML='Se resultat';nextBtn.dataset.waiting='';nextBtn.style.opacity='';
@@ -1973,7 +1976,7 @@ function setSelfAssessSimple(score,type,btn){
     usedTip:tipShown[currentQ],komplettering:null,kompletteringDeclined:false,aiLevel:null,aiReason:null,aiDone:false};
   if(q.aiRubric){
     aObj._aiPromise=gradeWithAI(q,pendingOpenAnswer).then(r=>{
-      aObj.aiLevel=r.level;aObj.aiReason=r.reason;aObj.aiDone=true;
+      aObj.aiLevel=r.level;aObj.aiReason=r.reason;aObj.aiSaker=r.saker;aObj.aiDone=true;
       const nextBtn=document.getElementById('nextBtn');
       if(nextBtn&&nextBtn.dataset.waiting==='ai'){
         nextBtn.disabled=false;nextBtn.innerHTML='Se resultat';nextBtn.dataset.waiting='';nextBtn.style.opacity='';
@@ -1987,22 +1990,100 @@ function setSelfAssessSimple(score,type,btn){
 
 async function gradeWithAI(q,ans){
   try{
+    // Hämta tidigare korrigeringar för denna fråga
+    const korr=await loadKorrigeringar(q.fraga||q.text||'');
+    const korrText=korr.length
+      ? `\n\nTidigare lärarkorrigeringar för denna fråga (lär dig av dessa):\n${korr.slice(0,5).map(k=>`Svar: "${k.svar}" → Lärare bedömde: ${k.niva}${k.kommentar?' (kommentar: '+k.kommentar+')':''}`).join('\n')}`
+      : '';
     const url=new URL(SHEETS_URL);
     url.searchParams.set('action','grade');
-    url.searchParams.set('rubric',q.aiRubric);
-    url.searchParams.set('question',q.text);
+    url.searchParams.set('rubric',q.aiRubric+korrText);
+    url.searchParams.set('question',q.fraga||q.text||'');
     url.searchParams.set('answer',ans);
     const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),15000));
     const res=await Promise.race([fetch(url.toString()),timeout]);
     const raw=await res.text();
-    return JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    return{level:parsed.level,reason:parsed.reason,saker:parsed.saker!==false};
   }catch{
     const nextBtn=document.getElementById('nextBtn');
     if(nextBtn&&nextBtn.dataset.waiting==='ai'){
       nextBtn.disabled=false;nextBtn.innerHTML='Se resultat';nextBtn.dataset.waiting='';nextBtn.style.opacity='';
     }
-    return{level:null,reason:null};
+    return{level:null,reason:null,saker:null};
   }
+}
+
+// ── MANUELL GRANSKNING I LÄRARVYN ───────────────────────────
+let aktivGranskning={subIdx:null,qId:null};
+
+function oppnaGranskning(subIdx,qId){
+  aktivGranskning={subIdx,qId};
+  const sub=submissions[subIdx];
+  const a=sub?.answers?.find(a=>a.qId===qId);
+  const q=quizData.questions.find(q=>q.id===qId);
+  if(!a||!q)return;
+  const nivaLabels={a:'Välutvecklat',c:'Utvecklat',e:'Godkänt',wrong:'Hade fel'};
+  document.getElementById('granskningModal').classList.add('open');
+  document.getElementById('granskningModalContent').innerHTML=`
+    <h3 style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:900;margin-bottom:4px;">Manuell bedömning</h3>
+    <div style="color:var(--muted);font-size:.82rem;margin-bottom:14px;">${sub.student} · ${q.subject} · ${q.text.slice(0,60)}…</div>
+    <div style="background:var(--soft);border-radius:8px;padding:12px 14px;font-size:.88rem;margin-bottom:8px;line-height:1.5;">${a.answer}</div>
+    ${a.komplettering?`<div style="background:#e8f0ff;border-radius:8px;padding:10px 14px;font-size:.85rem;margin-bottom:8px;">Komplettering: ${a.komplettering}</div>`:''}
+    ${a.aiLevel?`<div style="font-size:.8rem;color:var(--muted);margin-bottom:12px;">AI bedömde: <strong>${nivaLabels[a.aiLevel]||a.aiLevel}</strong>${a.aiSaker===false?' ⚠️ (osäker)':''}${a.aiReason?' · '+a.aiReason:''}</div>`:''}
+    <div style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">Din bedömning</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      ${['a','c','e','wrong'].map(niva=>`<button onclick="valjGranskningNiva('${niva}',this)" id="gNiva_${niva}"
+        style="flex:1;padding:10px 6px;border-radius:8px;border:2px solid #ddd;background:white;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;">
+        ${nivaLabels[niva]}
+      </button>`).join('')}
+    </div>
+    <textarea id="granskningKommentar" placeholder="Kommentar till AI (valfri) – hjälper AI förstå ditt beslut" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;min-height:80px;outline:none;resize:vertical;margin-bottom:12px;"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="closeGranskningModal()" style="padding:10px 18px;border:2px solid #ddd;border-radius:8px;background:white;font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;color:var(--muted);">Avbryt</button>
+      <button onclick="sparaGranskning()" style="padding:10px 18px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">Spara bedömning</button>
+    </div>
+    <div id="granskningStatus" style="font-size:.82rem;margin-top:8px;text-align:center;"></div>`;
+}
+
+let valdGranskningNiva=null;
+function valjGranskningNiva(niva,btn){
+  valdGranskningNiva=niva;
+  const cols={a:'var(--a-border)',c:'var(--c-border)',e:'var(--e-border)',wrong:'var(--red)'};
+  const bgs={a:'var(--a-bg)',c:'var(--c-bg)',e:'var(--e-bg)',wrong:'#fdf0f0'};
+  ['a','c','e','wrong'].forEach(n=>{
+    const b=document.getElementById(`gNiva_${n}`);
+    if(!b)return;
+    b.style.borderColor=n===niva?cols[n]:'#ddd';
+    b.style.background=n===niva?bgs[n]:'white';
+  });
+}
+
+async function sparaGranskning(){
+  if(!valdGranskningNiva){document.getElementById('granskningStatus').textContent='Välj en nivå först.';return;}
+  const sub=submissions[aktivGranskning.subIdx];
+  const a=sub?.answers?.find(a=>a.qId===aktivGranskning.qId);
+  const q=quizData.questions.find(q=>q.id===aktivGranskning.qId);
+  const kommentar=document.getElementById('granskningKommentar')?.value.trim()||'';
+  document.getElementById('granskningStatus').innerHTML='<span class="spinner"></span> Sparar...';
+  await sparaKorrigering({
+    fraga:(q?.fraga||q?.text||'').slice(0,200),
+    svar:(a?.answer||'').slice(0,500),
+    niva:valdGranskningNiva,
+    kommentar,
+    kodord:sub?.student||'',
+    datum:new Date().toLocaleDateString('sv-SE')
+  });
+  if(a){a.lararNiva=valdGranskningNiva;a.lararKommentar=kommentar;}
+  document.getElementById('granskningStatus').textContent='✓ Sparat!';
+  document.getElementById('granskningStatus').style.color='var(--green)';
+  valdGranskningNiva=null;
+  setTimeout(()=>closeGranskningModal(),900);
+}
+
+function closeGranskningModal(){
+  document.getElementById('granskningModal').classList.remove('open');
+  valdGranskningNiva=null;
 }
 
 function visaKompletteraFalt(qId){
@@ -2205,6 +2286,23 @@ async function loadUppgifter(){
     const r=await fetch(url.toString());
     return await r.json();
   }catch{return[];}
+}
+
+async function loadKorrigeringar(fragaText){
+  try{
+    const url=new URL(SHEETS_URL);
+    url.searchParams.set('action','getKorrigeringar');
+    url.searchParams.set('fraga',fragaText.slice(0,100));
+    const r=await fetch(url.toString());
+    return await r.json();
+  }catch{return[];}
+}
+
+async function sparaKorrigering(data){
+  try{
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:'saveKorrigering',...data})});
+  }catch{}
 }
 
 async function sparaUppgifter(){
@@ -2545,6 +2643,10 @@ async function openStudentModal(idx){
       const selfKey=a.selfAssess==='right'?'a':a.selfAssess==='partial'?'c':a.selfAssess==='wrong'?'wrong':a.selfAssess;
       const selfLabel=LEVEL_LABELS[selfKey]||selfKey;
       const aiLabel=a.aiLevel?LEVEL_LABELS[a.aiLevel]:'okänd';
+      // Osäker-flagga
+      if(a.aiSaker===false){
+        flagHtml+=`<div class="mq-flag" style="background:#fff9e8;border-left:3px solid var(--yellow);">⚠️ AI är osäker på denna bedömning – kontrollera manuellt.</div>`;
+      }
       const dir=mismatchDir(a);
       if(dir==='over2'||dir==='over1'){
         const serious=dir==='over2';
@@ -2556,7 +2658,13 @@ async function openStudentModal(idx){
       }else{
         flagHtml+=`<div class="mq-flag" style="background:var(--soft);border-left:3px solid #ccc;color:var(--muted)">AI ej tillgänglig. Eleven valde: ${selfLabel}.</div>`;
       }
+    }else if(a.type==='open'&&!q.useLevels&&a.aiSaker===false){
+      flagHtml+=`<div class="mq-flag" style="background:#fff9e8;border-left:3px solid var(--yellow);">⚠️ AI är osäker – kontrollera manuellt.</div>`;
     }
+    // Lärarbedömning om finns
+    const lararHtml=a.lararNiva?`<div style="margin-top:6px;padding:8px 12px;border-radius:8px;background:#e6f7f1;border-left:3px solid var(--green);font-size:.82rem;">
+      ✓ Lärarens bedömning: <strong>${LEVEL_LABELS[a.lararNiva]||a.lararNiva}</strong>${a.lararKommentar?' · '+a.lararKommentar:''}
+    </div>`:'';
     let kompHtml='';
     if(a.komplettering){
       const origLabel=a.aiLevelOrig?LEVEL_LABELS[a.aiLevelOrig]:'okänd';
@@ -2574,12 +2682,15 @@ async function openStudentModal(idx){
       kompHtml=`<div class="mq-no-komp">Tackade nej till komplettering</div>`;
     }
     const dir=mismatchDir(a);
-    const mqClass=dir==='over2'?'mq-warn2':dir==='over1'?'mq-warn1':a.komplettering?'mq-info':'';
+    const osaker=a.aiSaker===false;
+    const mqClass=osaker?'mq-warn1':dir==='over2'?'mq-warn2':dir==='over1'?'mq-warn1':a.komplettering?'mq-info':'';
+    const visaGranskningBtn=a.type==='open'&&q.aiRubric?
+      `<button onclick="oppnaGranskning(${idx},${a.qId})" style="margin-top:8px;padding:5px 12px;border-radius:6px;border:1px solid var(--ink);background:white;font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">✏️ Bedöm manuellt</button>`:'';
     return `<div class="mq ${mqClass}">
       <div class="mq-subject">${q.subject} · <span style="color:${color};font-weight:600">${scoreLabel}</span>${a.usedTip?' · <span style="color:#b07a00;font-size:.78rem">💡 tips</span>':''}</div>
       <div class="mq-qtext">${q.text}</div>
       <div class="mq-answer">${a.answer}</div>
-      ${flagHtml}${kompHtml}
+      ${flagHtml}${lararHtml}${kompHtml}${visaGranskningBtn}
     </div>`;
   }).join('');
   document.getElementById('modalContent').innerHTML=`
