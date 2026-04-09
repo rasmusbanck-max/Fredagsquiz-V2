@@ -806,6 +806,9 @@ function loggaUtLarare(){
 }
 
 // ── ELEV APP INIT ────────────────────────────────────────────
+// Cache-flaggor för lazy-loading
+let _laddatProfil=false, _laddatMal=false, _laddatOvningar=false, _laddatMeddelanden=false;
+
 async function initElevApp(){
   const emoji=PLANET_EMOJI[currentStudent]||'🌟';
   document.getElementById('appPlanet').textContent=emoji;
@@ -814,17 +817,28 @@ async function initElevApp(){
   document.getElementById('hemEmoji').textContent=emoji;
   document.getElementById('hemGreeting').textContent=`Hej, ${currentStudent}!`;
 
-  // Ladda historik, mål och övningar parallellt
-  const [hist,mal,ovn,uppg,medd]=await Promise.all([loadElevHistory(),loadMalFromSheets(),loadOvningHistory(),loadUppgifter(),loadMeddelanden()]);
-  elevHistory=hist||[];
-  malData=mal||{};
-  ovningHistory=ovn||[];
-  window._hemUppgifter=uppg||[];
-  window._elevMeddelanden=medd||[];
+  // Återställ cache-flaggor
+  _laddatProfil=false;_laddatMal=false;_laddatOvningar=false;_laddatMeddelanden=false;
 
+  // ETT batch-anrop för all elevdata
+  try{
+    const url=new URL(SHEETS_URL);
+    url.searchParams.set('action','getAll');
+    url.searchParams.set('kodord',currentStudent);
+    const r=await fetch(url.toString());
+    const data=await r.json();
+    elevHistory=data.history||[];
+    malData=data.mal||{};
+    ovningHistory=data.ovningar||[];
+    window._hemUppgifter=data.uppgifter||[];
+    window._elevMeddelanden=data.meddelanden||[];
+  }catch{
+    elevHistory=[];malData={};ovningHistory=[];
+    window._hemUppgifter=[];window._elevMeddelanden=[];
+  }
+
+  // Rendera bara Hem direkt – resten lazy
   renderHem();
-  renderProfil();
-  renderMal();
 }
 
 // ── HEM ─────────────────────────────────────────────────────
@@ -1259,8 +1273,12 @@ function byttFlik(flik){
   const navMap={Hem:'navHem',Quiz:'navQuiz',Profil:'navProfil',Mal:'navMal',Ovningar:'navOvningar',Meddelanden:'navMeddelanden'};
   document.getElementById(map[flik])?.classList.add('active');
   document.getElementById(navMap[flik])?.classList.add('active');
-  if(flik==='Ovningar')renderOvningar();
-  if(flik==='Meddelanden')renderElevMeddelanden();
+
+  // Lazy-loading – rendera bara när fliken besöks för första gången
+  if(flik==='Profil'&&!_laddatProfil){_laddatProfil=true;renderProfil();}
+  if(flik==='Mal'&&!_laddatMal){_laddatMal=true;renderMal();}
+  if(flik==='Ovningar'){if(!_laddatOvningar){_laddatOvningar=true;}renderOvningar();}
+  if(flik==='Meddelanden'){if(!_laddatMeddelanden){_laddatMeddelanden=true;}renderElevMeddelanden();}
 }
 
 function byttLararFlik(flik){
