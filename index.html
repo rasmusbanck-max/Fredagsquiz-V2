@@ -1025,7 +1025,7 @@ function renderMeddelandenPanel(){
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           ${!m.svar?`<button onclick="openSvarModal('${m.id}','${m.kodord}',\`${m.text.replace(/`/g,"'")}\`,'${m.datum}','${m.tid}')" style="padding:6px 12px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">Svara</button>`:''}
-          <button onclick="taBortMeddelande(${i})" style="padding:6px 10px;border:1px solid #fdd;background:#fdf0f0;border-radius:8px;font-size:.75rem;cursor:pointer;color:var(--red);">✕</button>
+          <button onclick="taBortMeddelande('${m.id}',${i})" style="padding:6px 10px;border:1px solid #fdd;background:#fdf0f0;border-radius:8px;font-size:.75rem;cursor:pointer;color:var(--red);">✕</button>
         </div>
       </div>
       ${m.svar?`<div style="background:#e6f7f1;border-radius:8px;padding:10px 14px;font-size:.85rem;line-height:1.5;">
@@ -1036,10 +1036,15 @@ function renderMeddelandenPanel(){
   </div>`;
 }
 
-function taBortMeddelande(idx){
+async function taBortMeddelande(id,idx){
   if(!window._allaMeddelanden)return;
   window._allaMeddelanden.splice(idx,1);
   renderMeddelandenPanel();
+  // Spara borttagning permanent i Sheets
+  try{
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:'deleteMeddelande',id})});
+  }catch{}
 }
 
 function renderFeedbackPanel(){
@@ -1061,10 +1066,15 @@ function renderFeedbackPanel(){
   </div>`;
 }
 
-function taBortFeedback(idx){
+async function taBortFeedback(idx){
   if(!window._allaFeedback)return;
   window._allaFeedback.splice(idx,1);
   renderFeedbackPanel();
+  // Spara borttagning permanent – skicka hela listan
+  try{
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:'saveFeedbackLista',feedback:window._allaFeedback})});
+  }catch{}
 }
 
 // ── PROFIL/STATISTIK ─────────────────────────────────────────
