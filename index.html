@@ -347,6 +347,7 @@
         </div>
         <div id="hemQuizBanner"></div>
         <div id="hemUppgifter"></div>
+        <div id="hemTranaMer"></div>
         <div id="hemMeddelanden"></div>
         <div class="recent-section" id="hemRecent"></div>
       </div>
@@ -828,6 +829,39 @@ function renderHem(){
       </div>`;
     }else{
       uppgifterEl.innerHTML='';
+    }
+  }
+
+  // Träna mer på – baserat på övningshistorik
+  const tranaMerEl=document.getElementById('hemTranaMer');
+  if(tranaMerEl){
+    // Samla alla fel per fråga från övningshistoriken
+    const felFragor={};
+    ovningHistory.forEach(o=>{
+      (o.fragor||[]).forEach(f=>{
+        if(!f.ratt){
+          const key=f.fraga;
+          if(!felFragor[key])felFragor[key]={fraga:f.fraga,amne:o.amne,felAntal:0};
+          felFragor[key].felAntal++;
+        }
+      });
+    });
+    const sorterade=Object.values(felFragor).sort((a,b)=>b.felAntal-a.felAntal).slice(0,3);
+    if(sorterade.length){
+      const amneMap={'NO (Kemi)':'NO (Kemi)','SO':'SO','Svenska':'Svenska'};
+      tranaMerEl.innerHTML=`<div style="margin-bottom:20px;">
+        <div style="font-family:'Fraunces',serif;font-size:.9rem;font-weight:700;margin-bottom:8px;color:var(--muted);">TRÄNA MER PÅ</div>
+        ${sorterade.map(f=>`
+          <div style="background:white;border-radius:12px;padding:14px 18px;border-left:4px solid var(--yellow);margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+            <div style="flex:1;">
+              <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">${f.amne} · fel ${f.felAntal} ${f.felAntal===1?'gång':'gånger'}</div>
+              <div style="font-size:.88rem;font-weight:600;line-height:1.4;">${f.fraga.length>70?f.fraga.slice(0,70)+'…':f.fraga}</div>
+            </div>
+            <button onclick="byttFlik('Ovningar');byttOvningAmne('${amneMap[f.amne]||f.amne}')" style="padding:8px 14px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:500;cursor:pointer;flex-shrink:0;">Öva →</button>
+          </div>`).join('')}
+      </div>`;
+    }else{
+      tranaMerEl.innerHTML='';
     }
   }
 
