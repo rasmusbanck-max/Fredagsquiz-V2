@@ -454,12 +454,12 @@
     </div>
     <div id="lararDash" style="display:none;">
       <!-- LÄRARE FLIKAR -->
-      <div style="background:white;border-bottom:1px solid var(--soft);display:flex;overflow-x:auto;position:sticky;top:0;z-index:10;">
-        <button class="mode-tab active" id="lTabElever" onclick="byttLararFlik('Elever')" style="white-space:nowrap;">📋 Elever</button>
-        <button class="mode-tab" id="lTabMeddelanden" onclick="byttLararFlik('Meddelanden')" style="white-space:nowrap;">✉️ Meddelanden</button>
-        <button class="mode-tab" id="lTabFeedback" onclick="byttLararFlik('Feedback')" style="white-space:nowrap;">💡 Feedback</button>
-        <button class="mode-tab" id="lTabLaxor" onclick="byttLararFlik('Laxor')" style="white-space:nowrap;">📚 Läxor & prov</button>
-        <button class="mode-tab" id="lTabStatistik" onclick="byttLararFlik('Statistik')" style="white-space:nowrap;">📊 Statistik</button>
+      <div style="background:var(--ink);display:flex;overflow-x:auto;padding:0 20px;gap:4px;">
+        <button onclick="byttLararFlik('Elever')" id="lTabElever" style="padding:12px 18px;border:none;background:none;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s;" class="ltab active-ltab">📋 Elever</button>
+        <button onclick="byttLararFlik('Meddelanden')" id="lTabMeddelanden" style="padding:12px 18px;border:none;background:none;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s;" class="ltab">✉️ Meddelanden</button>
+        <button onclick="byttLararFlik('Feedback')" id="lTabFeedback" style="padding:12px 18px;border:none;background:none;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s;" class="ltab">💡 Feedback</button>
+        <button onclick="byttLararFlik('Laxor')" id="lTabLaxor" style="padding:12px 18px;border:none;background:none;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s;" class="ltab">📚 Läxor & prov</button>
+        <button onclick="byttLararFlik('Statistik')" id="lTabStatistik" style="padding:12px 18px;border:none;background:none;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s;" class="ltab">📊 Statistik</button>
       </div>
 
       <!-- ELEVER-FLIKEN -->
@@ -1287,7 +1287,10 @@ function byttLararFlik(flik){
     const el=document.getElementById(`lFlik${f}`);
     const btn=document.getElementById(`lTab${f}`);
     if(el)el.style.display=f===flik?'block':'none';
-    if(btn)btn.classList.toggle('active',f===flik);
+    if(btn){
+      btn.style.color=f===flik?'white':'rgba(255,255,255,.5)';
+      btn.style.borderBottom=f===flik?'3px solid var(--accent)':'3px solid transparent';
+    }
   });
 }
 
