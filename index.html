@@ -2588,22 +2588,23 @@ function unlockAllCodes(){
 function renderTeacherDash(){
   renderKodordPanel();
   const n=submissions.length;
-  document.getElementById('teacherSubtitle').textContent=`Vecka ${currentWeek} · ${n} inlämning${n!==1?'ar':''}`;
+  const subtitleEl=document.getElementById('teacherSubtitle');
+  if(subtitleEl)subtitleEl.textContent=`Vecka ${currentWeek} · ${n} inlämning${n!==1?'ar':''}`;
   const avgScore=n?Math.round(submissions.reduce((s,r)=>s+(parseInt(r.score)||0),0)/n):0;
   const mismatchCount=n?submissions.reduce((s,sub)=>s+(sub.answers||[]).filter(a=>mismatchDir(a)).length,0):0;
-  const ovnTotal=(window._lararOvningar||[]).length;
-  const ovnElever=new Set((window._lararOvningar||[]).map(o=>o.kodord)).size;
-  document.getElementById('insightsGrid').innerHTML=`
+  const insightsEl=document.getElementById('insightsGrid');
+  if(insightsEl)insightsEl.innerHTML=`
     <div class="insight-card"><div class="card-label">Inlämnat</div><div class="card-value">${n}</div><div class="card-sub">elever</div></div>
     <div class="insight-card"><div class="card-label">Snittscore</div><div class="card-value">${n?avgScore+'%':'—'}</div><div class="card-sub">av klassen</div></div>
     <div class="insight-card"><div class="card-label">Självbed. avviker</div><div class="card-value">${mismatchCount}</div><div class="card-sub">fall totalt</div></div>`;
 
-  // Övningsöversikt
+  // Övningsöversikt (i Statistik-fliken)
   const ovnEl=document.getElementById('ovningOversikt');
   const allOvn=window._lararOvningar||[];
-  if(!allOvn.length){
-    ovnEl.innerHTML=`<span style="color:var(--muted)">Inga övningar gjorda än.</span>`;
-  }else{
+  if(ovnEl){
+    if(!allOvn.length){
+      ovnEl.innerHTML=`<span style="color:var(--muted)">Inga övningar gjorda än.</span>`;
+    }else{
     const amneStats={};
     allOvn.forEach(o=>{
       const pct=typeof o.pct==='string'?parseInt(o.pct):Number(o.pct)||0;
@@ -2628,6 +2629,7 @@ function renderTeacherDash(){
     });
     ovnEl.innerHTML=ovnHtml;
   }
+  } // stänger if(ovnEl)
 
   // Svåraste frågorna per ämne från fredagsquizet
   const fragaSvarsdata={};
@@ -2718,6 +2720,7 @@ function renderTeacherDash(){
   ])].sort();
 
   const tableEl=document.getElementById('studentTable');
+  if(!tableEl)return;
   if(!alleElever.length){tableEl.innerHTML=`<div class="no-results">Inga inlämningar än.</div>`;return;}
 
   tableEl.innerHTML=`<table><thead><tr><th>Kodord</th><th>Quiz v.${currentWeek}</th><th>Score</th><th>Övningar</th><th>Flaggor</th><th></th></tr></thead>
