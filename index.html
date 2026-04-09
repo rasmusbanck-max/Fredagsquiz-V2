@@ -346,6 +346,7 @@
           <div class="hem-card"><div class="hem-card-label">Bästa vecka</div><div class="hem-card-value" id="hemBest">—</div><div class="hem-card-sub">score</div></div>
         </div>
         <div id="hemQuizBanner"></div>
+        <div id="hemUppgifter"></div>
         <div class="recent-section" id="hemRecent"></div>
       </div>
     </div>
@@ -446,6 +447,8 @@
         <h2>Lärarvy</h2>
         <p class="t-subtitle" id="teacherSubtitle"></p>
         <div class="insights-grid" id="insightsGrid"></div>
+        <div class="section-title">Läxor, prov & info</div>
+        <div id="uppgifterPanel"></div>
         <div class="section-title">Kodord denna vecka</div>
         <div id="kodordPanel"></div>
         <div class="section-title">Övningar – klassöversikt</div>
@@ -481,7 +484,12 @@ let currentStudent=null,currentQ=0,answers=[],selectedOption=null;
 let tipShown=[],pendingOpenAnswer=null,selfAssessLocked=false,quizStartTime=null;
 let submissions=[],malData={},malDirty=false,elevHistory=[];
 
-const CLASSROOM_URL="https://classroom.google.com/c/Nzc1MDExNTg1NzE2";
+const CLASSROOM_URLS={
+  "NO":"https://classroom.google.com/c/Nzc1MDExNTg1NzE2",
+  "Svenska":"https://classroom.google.com/c/Nzc1MDA1NTEwNTAz",
+  "Matematik":"https://classroom.google.com/c/ODAwODE2ODMwMTM3",
+  "Engelska":"https://classroom.google.com/c/ODAwODI0ODUxODcy"
+};
 
 const MAL_AMNEN={
   "NO":{
@@ -653,10 +661,11 @@ async function initElevApp(){
   document.getElementById('hemGreeting').textContent=`Hej, ${currentStudent}!`;
 
   // Ladda historik, mål och övningar parallellt
-  const [hist,mal,ovn]=await Promise.all([loadElevHistory(),loadMalFromSheets(),loadOvningHistory()]);
+  const [hist,mal,ovn,uppg]=await Promise.all([loadElevHistory(),loadMalFromSheets(),loadOvningHistory(),loadUppgifter()]);
   elevHistory=hist||[];
   malData=mal||{};
   ovningHistory=ovn||[];
+  window._hemUppgifter=uppg||[];
 
   renderHem();
   renderProfil();
@@ -676,21 +685,47 @@ function renderHem(){
   // Quiz-banner
   const locked=isCodeLocked(currentStudent);
   const bannerEl=document.getElementById('hemQuizBanner');
+  const classroomLinks=Object.entries(CLASSROOM_URLS).map(([amne,url])=>`
+    <a href="${url}" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:white;border-radius:12px;padding:14px 18px;border-left:4px solid var(--accent2);text-decoration:none;color:var(--ink);margin-bottom:10px;">
+      <div><div style="font-family:'Fraunces',serif;font-weight:700;font-size:.95rem;margin-bottom:1px;">${amne}</div><div style="font-size:.78rem;color:var(--muted);">Öppna Google Classroom</div></div>
+      <span style="font-size:1.2rem;color:var(--accent2);">→</span>
+    </a>`).join('');
+
   if(locked){
     bannerEl.innerHTML=`<div class="no-quiz-banner"><p>✓ Du har gjort veckans quiz. Bra jobbat!</p></div>
-    <a href="${CLASSROOM_URL}" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:white;border-radius:12px;padding:16px 20px;border-left:4px solid var(--accent2);text-decoration:none;color:var(--ink);margin-bottom:20px;">
-      <div><div style="font-family:'Fraunces',serif;font-weight:700;font-size:1rem;margin-bottom:2px;">Google Classroom – NO</div><div style="font-size:.83rem;color:var(--muted);">Öppna klassrummet för naturvetenskap</div></div>
-      <span style="font-size:1.4rem;color:var(--accent2);">→</span>
-    </a>`;
+    <div style="margin-bottom:20px;"><div style="font-family:'Fraunces',serif;font-size:.9rem;font-weight:700;margin-bottom:8px;color:var(--muted);">KLASSRUM</div>${classroomLinks}</div>`;
   }else{
-    bannerEl.innerHTML=`<div class="quiz-banner" onclick="byttFlik('Quiz')">
+    bannerEl.innerHTML=`<div class="quiz-banner" onclick="byttFlik('Quiz')" style="margin-bottom:10px;">
       <div class="quiz-banner-text"><h3>Veckans quiz är redo!</h3><p>Vecka ${currentWeek} · ${quizData.questions.length} frågor</p></div>
       <span class="quiz-banner-arrow">→</span>
     </div>
-    <a href="${CLASSROOM_URL}" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:white;border-radius:12px;padding:16px 20px;border-left:4px solid var(--accent2);text-decoration:none;color:var(--ink);margin-bottom:20px;">
-      <div><div style="font-family:'Fraunces',serif;font-weight:700;font-size:1rem;margin-bottom:2px;">Google Classroom – NO</div><div style="font-size:.83rem;color:var(--muted);">Öppna klassrummet för naturvetenskap</div></div>
-      <span style="font-size:1.4rem;color:var(--accent2);">→</span>
-    </a>`;
+    <div style="margin-bottom:20px;"><div style="font-family:'Fraunces',serif;font-size:.9rem;font-weight:700;margin-bottom:8px;color:var(--muted);">KLASSRUM</div>${classroomLinks}</div>`;
+  }
+
+  // Läxor och prov
+  const uppgifterEl=document.getElementById('hemUppgifter');
+  if(uppgifterEl){
+    const uppgifter=window._hemUppgifter||[];
+    if(uppgifter.length){
+      const typIkon={laxa:'📚',prov:'✏️',inlamning:'📎',info:'📢'};
+      const typFarg={laxa:'var(--accent2)',prov:'var(--red)',inlamning:'var(--green)',info:'var(--yellow)'};
+      uppgifterEl.innerHTML=`<div style="margin-bottom:20px;">
+        <div style="font-family:'Fraunces',serif;font-size:.9rem;font-weight:700;margin-bottom:8px;color:var(--muted);">KOMMANDE</div>
+        ${uppgifter.filter(u=>!u.arkiverad).map(u=>`
+          <div style="background:white;border-radius:12px;padding:14px 18px;border-left:4px solid ${typFarg[u.typ]||'var(--soft)'};margin-bottom:8px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+              <div>
+                <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:${typFarg[u.typ]||'var(--muted)'};margin-bottom:3px;">${typIkon[u.typ]||'📌'} ${u.typ==='laxa'?'Läxa':u.typ==='prov'?'Prov':u.typ==='inlamning'?'Inlämning':'Info'} · ${u.amne}</div>
+                <div style="font-family:'Fraunces',serif;font-weight:700;font-size:.95rem;">${u.titel}</div>
+                ${u.beskrivning?`<div style="font-size:.82rem;color:var(--muted);margin-top:3px;">${u.beskrivning}</div>`:''}
+              </div>
+              ${u.datum?`<div style="font-size:.78rem;font-weight:600;color:var(--muted);white-space:nowrap;flex-shrink:0;">${u.datum}</div>`:''}
+            </div>
+          </div>`).join('')}
+      </div>`;
+    }else{
+      uppgifterEl.innerHTML='';
+    }
   }
 
   // Historik
@@ -1930,12 +1965,121 @@ function checkTeacherPin(){
 
 async function loadTeacherDash(){
   document.getElementById('studentTable').innerHTML=`<div class="no-results"><span class="spinner"></span> Hämtar...</div>`;
-  const [sheetsData,ovnData]=await Promise.all([loadFromSheets(),loadAllaOvningar()]);
+  const [sheetsData,ovnData,uppgifterData]=await Promise.all([
+    loadFromSheets(),
+    loadAllaOvningar(),
+    loadUppgifter()
+  ]);
   sheetsData.forEach(s=>{
     if(!submissions.find(x=>x.student===s.student&&x.week===s.week&&x.timestamp===s.timestamp))submissions.push(s);
   });
   window._lararOvningar=ovnData||[];
+  window._hemUppgifter=uppgifterData||[];
   renderTeacherDash();
+  renderUppgifterPanel();
+}
+
+async function loadUppgifter(){
+  try{
+    const url=new URL(SHEETS_URL);
+    url.searchParams.set('action','getUppgifter');
+    const r=await fetch(url.toString());
+    return await r.json();
+  }catch{return[];}
+}
+
+async function sparaUppgifter(){
+  try{
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:'saveUppgifter',uppgifter:window._hemUppgifter||[]})});
+  }catch{}
+}
+
+function renderUppgifterPanel(){
+  const el=document.getElementById('uppgifterPanel');
+  if(!el)return;
+  const uppgifter=window._hemUppgifter||[];
+  const typOptions=['laxa','prov','inlamning','info'];
+  const typLabels={laxa:'📚 Läxa',prov:'✏️ Prov',inlamning:'📎 Inlämning',info:'📢 Info'};
+  const amneOptions=['NO','Svenska','Matematik','Engelska','Allmänt'];
+
+  el.innerHTML=`
+    <div style="background:white;border-radius:12px;padding:18px 20px;margin-bottom:8px;">
+      <div style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;">Lägg till ny</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <select id="nyTyp" style="padding:8px 12px;border:2px solid #ddd;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;background:white;">
+          ${typOptions.map(t=>`<option value="${t}">${typLabels[t]}</option>`).join('')}
+        </select>
+        <select id="nyAmne" style="padding:8px 12px;border:2px solid #ddd;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;background:white;">
+          ${amneOptions.map(a=>`<option value="${a}">${a}</option>`).join('')}
+        </select>
+      </div>
+      <input type="text" id="nyTitel" placeholder="Titel (t.ex. Kap 4 sid 82-85)" style="width:100%;padding:8px 12px;border:2px solid #ddd;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;margin-bottom:8px;">
+      <input type="text" id="nyBeskrivning" placeholder="Beskrivning (valfri)" style="width:100%;padding:8px 12px;border:2px solid #ddd;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;margin-bottom:8px;">
+      <div style="display:flex;gap:8px;">
+        <input type="date" id="nyDatum" style="flex:1;padding:8px 12px;border:2px solid #ddd;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;background:white;">
+        <button onclick="laggTillUppgift()" style="padding:8px 18px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">Lägg till</button>
+      </div>
+    </div>
+    ${uppgifter.length?`<div style="background:white;border-radius:12px;padding:4px 0;">
+      ${uppgifter.map((u,i)=>{
+        const typFarg={laxa:'var(--accent2)',prov:'var(--red)',inlamning:'var(--green)',info:'var(--yellow)'};
+        return `<div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--soft);${u.arkiverad?'opacity:.4':''}">
+          <div style="width:4px;height:36px;border-radius:2px;background:${typFarg[u.typ]||'#ddd'};flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:.72rem;color:var(--muted);">${typLabels[u.typ]||u.typ} · ${u.amne}${u.datum?' · '+u.datum:''}</div>
+            <div style="font-size:.88rem;font-weight:600;">${u.titel}</div>
+            ${u.beskrivning?`<div style="font-size:.78rem;color:var(--muted);">${u.beskrivning}</div>`:''}
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="toogleArkivera(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid #ddd;background:white;font-size:.75rem;cursor:pointer;color:var(--muted);">${u.arkiverad?'Återställ':'Arkivera'}</button>
+            <button onclick="taBortUppgift(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid #fdd;background:#fdf0f0;font-size:.75rem;cursor:pointer;color:var(--red);">Ta bort</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`:'<div style="background:white;border-radius:12px;padding:16px 20px;color:var(--muted);font-size:.88rem;">Inga uppgifter tillagda än.</div>'}`;
+}
+
+function laggTillUppgift(){
+  const titel=document.getElementById('nyTitel')?.value.trim();
+  if(!titel)return;
+  if(!window._hemUppgifter)window._hemUppgifter=[];
+  const datumRaw=document.getElementById('nyDatum')?.value;
+  let datumVisning='';
+  if(datumRaw){
+    const d=new Date(datumRaw+'T12:00:00');
+    datumVisning=d.toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'short'});
+    datumVisning=datumVisning.charAt(0).toUpperCase()+datumVisning.slice(1);
+  }
+  window._hemUppgifter.unshift({
+    typ:document.getElementById('nyTyp')?.value||'laxa',
+    amne:document.getElementById('nyAmne')?.value||'Allmänt',
+    titel,
+    beskrivning:document.getElementById('nyBeskrivning')?.value.trim()||'',
+    datum:datumVisning,
+    datumRaw:datumRaw||'',
+    arkiverad:false,
+    id:Date.now()
+  });
+  sparaUppgifter();
+  renderUppgifterPanel();
+  renderHem();
+}
+
+function toogleArkivera(idx){
+  if(!window._hemUppgifter)return;
+  window._hemUppgifter[idx].arkiverad=!window._hemUppgifter[idx].arkiverad;
+  sparaUppgifter();
+  renderUppgifterPanel();
+  renderHem();
+}
+
+function taBortUppgift(idx){
+  if(!window._hemUppgifter)return;
+  window._hemUppgifter.splice(idx,1);
+  sparaUppgifter();
+  renderUppgifterPanel();
+  renderHem();
 }
 
 async function loadAllaOvningar(){
