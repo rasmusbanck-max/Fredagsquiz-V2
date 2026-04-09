@@ -347,6 +347,7 @@
         </div>
         <div id="hemQuizBanner"></div>
         <div id="hemUppgifter"></div>
+        <div id="hemMeddelanden"></div>
         <div class="recent-section" id="hemRecent"></div>
       </div>
     </div>
@@ -447,6 +448,10 @@
         <h2>Lärarvy</h2>
         <p class="t-subtitle" id="teacherSubtitle"></p>
         <div class="insights-grid" id="insightsGrid"></div>
+        <div class="section-title">Meddelanden från elever</div>
+        <div id="meddelandenPanel"></div>
+        <div class="section-title">Feedback från elever</div>
+        <div id="feedbackPanel"></div>
         <div class="section-title">Läxor, prov & info</div>
         <div id="uppgifterPanel"></div>
         <div class="section-title">Kodord denna vecka</div>
@@ -469,6 +474,46 @@
 
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="modal-overlay" id="meddelandeModal" onclick="if(event.target===this)closeMeddelandeModal()">
+  <div class="modal" style="max-width:480px;">
+    <h3 style="margin-bottom:8px;">Skicka meddelande</h3>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px;">Ditt meddelande skickas till din lärare.</p>
+    <textarea id="meddelandeText" placeholder="Skriv ditt meddelande här..." style="width:100%;padding:14px;border:2px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.92rem;resize:vertical;min-height:120px;outline:none;margin-bottom:12px;"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="closeMeddelandeModal()" style="padding:10px 18px;border:2px solid #ddd;border-radius:8px;background:white;font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;color:var(--muted);">Avbryt</button>
+      <button onclick="skickaMeddelande()" style="padding:10px 18px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">Skicka</button>
+    </div>
+    <div id="meddelandeStatus" style="font-size:.82rem;margin-top:8px;text-align:center;min-height:16px;"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="feedbackModal" onclick="if(event.target===this)closeFeedbackModal()">
+  <div class="modal" style="max-width:480px;">
+    <h3 style="margin-bottom:8px;">Lämna feedback</h3>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px;">Har du en idé eller tanke om appen? Skriv gärna!</p>
+    <textarea id="feedbackText" placeholder="Din idé eller tanke..." style="width:100%;padding:14px;border:2px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.92rem;resize:vertical;min-height:120px;outline:none;margin-bottom:12px;"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="closeFeedbackModal()" style="padding:10px 18px;border:2px solid #ddd;border-radius:8px;background:white;font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;color:var(--muted);">Avbryt</button>
+      <button onclick="skickaFeedback()" style="padding:10px 18px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">Skicka</button>
+    </div>
+    <div id="feedbackStatus" style="font-size:.82rem;margin-top:8px;text-align:center;min-height:16px;"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="svarModal" onclick="if(event.target===this)closeSvarModal()">
+  <div class="modal" style="max-width:480px;">
+    <h3 style="margin-bottom:4px;" id="svarModalTitel">Svara</h3>
+    <div style="color:var(--muted);font-size:.82rem;margin-bottom:12px;" id="svarModalMeta"></div>
+    <div style="background:var(--soft);border-radius:8px;padding:12px 14px;font-size:.88rem;margin-bottom:14px;line-height:1.5;" id="svarModalFraga"></div>
+    <textarea id="svarText" placeholder="Skriv ditt svar..." style="width:100%;padding:14px;border:2px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.92rem;resize:vertical;min-height:100px;outline:none;margin-bottom:12px;"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="closeSvarModal()" style="padding:10px 18px;border:2px solid #ddd;border-radius:8px;background:white;font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;color:var(--muted);">Avbryt</button>
+      <button onclick="skickaSvar()" style="padding:10px 18px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">Skicka svar</button>
+    </div>
+    <div id="svarStatus" style="font-size:.82rem;margin-top:8px;text-align:center;min-height:16px;"></div>
+  </div>
 </div>
 
 <script>
@@ -622,6 +667,61 @@ async function saveMalToSheets(){
   }catch{}
 }
 
+async function skickaMeddelandeToSheets(text){
+  try{
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:'saveMeddelande',kodord:currentStudent,text,
+        tid:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}),
+        datum:new Date().toLocaleDateString('sv-SE')})});
+  }catch{}
+}
+
+async function skickaFeedbackToSheets(text){
+  try{
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:'saveFeedback',kodord:currentStudent,text,
+        tid:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}),
+        datum:new Date().toLocaleDateString('sv-SE')})});
+  }catch{}
+}
+
+async function sparaSvarToSheets(meddId,svar){
+  try{
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:'saveSvar',meddId,svar,
+        tid:new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}),
+        datum:new Date().toLocaleDateString('sv-SE')})});
+  }catch{}
+}
+
+async function loadMeddelanden(){
+  try{
+    const url=new URL(SHEETS_URL);
+    url.searchParams.set('action','getMeddelanden');
+    url.searchParams.set('kodord',currentStudent);
+    const r=await fetch(url.toString());
+    return await r.json();
+  }catch{return[];}
+}
+
+async function loadAllaMeddelanden(){
+  try{
+    const url=new URL(SHEETS_URL);
+    url.searchParams.set('action','getAllaMeddelanden');
+    const r=await fetch(url.toString());
+    return await r.json();
+  }catch{return[];}
+}
+
+async function loadAllaFeedback(){
+  try{
+    const url=new URL(SHEETS_URL);
+    url.searchParams.set('action','getAllaFeedback');
+    const r=await fetch(url.toString());
+    return await r.json();
+  }catch{return[];}
+}
+
 // ── INLOGG ──────────────────────────────────────────────────
 function logga(){
   const code=document.getElementById('loginInput').value.trim().toUpperCase();
@@ -661,11 +761,12 @@ async function initElevApp(){
   document.getElementById('hemGreeting').textContent=`Hej, ${currentStudent}!`;
 
   // Ladda historik, mål och övningar parallellt
-  const [hist,mal,ovn,uppg]=await Promise.all([loadElevHistory(),loadMalFromSheets(),loadOvningHistory(),loadUppgifter()]);
+  const [hist,mal,ovn,uppg,medd]=await Promise.all([loadElevHistory(),loadMalFromSheets(),loadOvningHistory(),loadUppgifter(),loadMeddelanden()]);
   elevHistory=hist||[];
   malData=mal||{};
   ovningHistory=ovn||[];
   window._hemUppgifter=uppg||[];
+  window._elevMeddelanden=medd||[];
 
   renderHem();
   renderProfil();
@@ -728,6 +829,28 @@ function renderHem(){
     }
   }
 
+  // Meddelanden (svar från läraren)
+  const meddEl=document.getElementById('hemMeddelanden');
+  if(meddEl){
+    const medd=(window._elevMeddelanden||[]).filter(m=>m.svar);
+    const knappar=`<div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button onclick="document.getElementById('meddelandeModal').classList.add('open')" style="flex:1;padding:12px;background:var(--ink);color:var(--paper);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">✉️ Skicka meddelande</button>
+      <button onclick="document.getElementById('feedbackModal').classList.add('open')" style="flex:1;padding:12px;background:white;border:2px solid var(--soft);color:var(--ink);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">💡 Lämna feedback</button>
+    </div>`;
+    if(medd.length){
+      meddEl.innerHTML=knappar+`<div style="margin-bottom:20px;">
+        <div style="font-family:'Fraunces',serif;font-size:.9rem;font-weight:700;margin-bottom:8px;color:var(--muted);">SVAR FRÅN LÄRAREN</div>
+        ${medd.map(m=>`<div style="background:white;border-radius:12px;padding:14px 18px;border-left:4px solid var(--green);margin-bottom:8px;">
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px;">${m.datum} ${m.tid} · Du frågade: "${m.text.length>60?m.text.slice(0,60)+'…':m.text}"</div>
+          <div style="font-size:.92rem;line-height:1.5;">${m.svar}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">${m.svarDatum||''} ${m.svarTid||''}</div>
+        </div>`).join('')}
+      </div>`;
+    }else{
+      meddEl.innerHTML=knappar;
+    }
+  }
+
   // Historik
   const recentEl=document.getElementById('hemRecent');
   if(!elevHistory.length){recentEl.innerHTML='';return;}
@@ -739,6 +862,96 @@ function renderHem(){
       <div class="recent-bar-wrap"><div class="recent-bar" style="width:${maxScore>0?((parseInt(h.score)||0)/maxScore)*100:0}%"></div></div>
       <span class="recent-score">${h.score}%</span>
     </div>`).join('')}</div>`;
+}
+
+// ── MEDDELANDEN & FEEDBACK ───────────────────────────────────
+function closeMeddelandeModal(){document.getElementById('meddelandeModal').classList.remove('open');document.getElementById('meddelandeText').value='';document.getElementById('meddelandeStatus').textContent='';}
+function closeFeedbackModal(){document.getElementById('feedbackModal').classList.remove('open');document.getElementById('feedbackText').value='';document.getElementById('feedbackStatus').textContent='';}
+function closeSvarModal(){document.getElementById('svarModal').classList.remove('open');document.getElementById('svarText').value='';document.getElementById('svarStatus').textContent='';}
+
+async function skickaMeddelande(){
+  const text=document.getElementById('meddelandeText')?.value.trim();
+  if(!text){document.getElementById('meddelandeStatus').textContent='Skriv ett meddelande först.';return;}
+  document.getElementById('meddelandeStatus').innerHTML='<span class="spinner"></span> Skickar...';
+  await skickaMeddelandeToSheets(text);
+  document.getElementById('meddelandeStatus').textContent='✓ Skickat!';
+  document.getElementById('meddelandeStatus').style.color='var(--green)';
+  setTimeout(()=>closeMeddelandeModal(),1200);
+}
+
+async function skickaFeedback(){
+  const text=document.getElementById('feedbackText')?.value.trim();
+  if(!text){document.getElementById('feedbackStatus').textContent='Skriv något först.';return;}
+  document.getElementById('feedbackStatus').innerHTML='<span class="spinner"></span> Skickar...';
+  await skickaFeedbackToSheets(text);
+  document.getElementById('feedbackStatus').textContent='✓ Tack för din feedback!';
+  document.getElementById('feedbackStatus').style.color='var(--green)';
+  setTimeout(()=>closeFeedbackModal(),1200);
+}
+
+let aktivtSvarId=null;
+function openSvarModal(id,kodord,text,datum,tid){
+  aktivtSvarId=id;
+  document.getElementById('svarModalTitel').textContent=`Svar till ${kodord}`;
+  document.getElementById('svarModalMeta').textContent=`${datum} ${tid}`;
+  document.getElementById('svarModalFraga').textContent=text;
+  document.getElementById('svarText').value='';
+  document.getElementById('svarStatus').textContent='';
+  document.getElementById('svarModal').classList.add('open');
+}
+
+async function skickaSvar(){
+  const text=document.getElementById('svarText')?.value.trim();
+  if(!text){document.getElementById('svarStatus').textContent='Skriv ett svar först.';return;}
+  document.getElementById('svarStatus').innerHTML='<span class="spinner"></span> Skickar...';
+  await sparaSvarToSheets(aktivtSvarId,text);
+  // Uppdatera lokalt
+  const medd=(window._allaMeddelanden||[]).find(m=>m.id===aktivtSvarId);
+  if(medd){medd.svar=text;medd.svarDatum=new Date().toLocaleDateString('sv-SE');medd.svarTid=new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});}
+  document.getElementById('svarStatus').textContent='✓ Svar skickat!';
+  document.getElementById('svarStatus').style.color='var(--green)';
+  setTimeout(()=>{closeSvarModal();renderMeddelandenPanel();},1000);
+}
+
+function renderMeddelandenPanel(){
+  const el=document.getElementById('meddelandenPanel');
+  if(!el)return;
+  const medd=window._allaMeddelanden||[];
+  if(!medd.length){
+    el.innerHTML=`<div style="background:white;border-radius:12px;padding:16px 20px;color:var(--muted);font-size:.88rem;margin-bottom:8px;">Inga meddelanden än.</div>`;
+    return;
+  }
+  el.innerHTML=`<div style="background:white;border-radius:12px;padding:4px 0;margin-bottom:8px;">
+    ${medd.map(m=>`<div style="padding:14px 18px;border-bottom:1px solid var(--soft);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:3px;">${PLANET_EMOJI[m.kodord]||''} ${m.kodord} · ${m.datum} ${m.tid}</div>
+          <div style="font-size:.92rem;line-height:1.5;">${m.text}</div>
+        </div>
+        ${!m.svar?`<button onclick="openSvarModal('${m.id}','${m.kodord}',\`${m.text.replace(/`/g,"'")}\`,'${m.datum}','${m.tid}')" style="padding:6px 14px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;flex-shrink:0;">Svara</button>`:''}
+      </div>
+      ${m.svar?`<div style="background:#e6f7f1;border-radius:8px;padding:10px 14px;font-size:.85rem;line-height:1.5;">
+        <div style="font-size:.7rem;color:var(--green);font-weight:600;margin-bottom:3px;">DITT SVAR · ${m.svarDatum||''} ${m.svarTid||''}</div>
+        ${m.svar}
+      </div>`:'<div style="font-size:.78rem;color:var(--muted);font-style:italic;">Ej besvarat</div>'}
+    </div>`).join('')}
+  </div>`;
+}
+
+function renderFeedbackPanel(){
+  const el=document.getElementById('feedbackPanel');
+  if(!el)return;
+  const fb=window._allaFeedback||[];
+  if(!fb.length){
+    el.innerHTML=`<div style="background:white;border-radius:12px;padding:16px 20px;color:var(--muted);font-size:.88rem;margin-bottom:8px;">Ingen feedback än.</div>`;
+    return;
+  }
+  el.innerHTML=`<div style="background:white;border-radius:12px;padding:4px 0;margin-bottom:8px;">
+    ${fb.map(f=>`<div style="padding:14px 18px;border-bottom:1px solid var(--soft);">
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px;">${PLANET_EMOJI[f.kodord]||'👤'} ${f.kodord} · ${f.datum} ${f.tid}</div>
+      <div style="font-size:.92rem;line-height:1.5;">${f.text}</div>
+    </div>`).join('')}
+  </div>`;
 }
 
 // ── PROFIL/STATISTIK ─────────────────────────────────────────
@@ -1965,18 +2178,24 @@ function checkTeacherPin(){
 
 async function loadTeacherDash(){
   document.getElementById('studentTable').innerHTML=`<div class="no-results"><span class="spinner"></span> Hämtar...</div>`;
-  const [sheetsData,ovnData,uppgifterData]=await Promise.all([
+  const [sheetsData,ovnData,uppgifterData,allaMedd,allaFb]=await Promise.all([
     loadFromSheets(),
     loadAllaOvningar(),
-    loadUppgifter()
+    loadUppgifter(),
+    loadAllaMeddelanden(),
+    loadAllaFeedback()
   ]);
   sheetsData.forEach(s=>{
     if(!submissions.find(x=>x.student===s.student&&x.week===s.week&&x.timestamp===s.timestamp))submissions.push(s);
   });
   window._lararOvningar=ovnData||[];
   window._hemUppgifter=uppgifterData||[];
+  window._allaMeddelanden=allaMedd||[];
+  window._allaFeedback=allaFb||[];
   renderTeacherDash();
   renderUppgifterPanel();
+  renderMeddelandenPanel();
+  renderFeedbackPanel();
 }
 
 async function loadUppgifter(){
@@ -2003,6 +2222,25 @@ function renderUppgifterPanel(){
   const typLabels={laxa:'📚 Läxa',prov:'✏️ Prov',inlamning:'📎 Inlämning',info:'📢 Info'};
   const amneOptions=['NO','Svenska','Matematik','Engelska','Allmänt'];
 
+  const aktiva=uppgifter.filter(u=>!u.arkiverad);
+  const arkiverade=uppgifter.filter(u=>u.arkiverad);
+
+  const renderRad=(u,i)=>{
+    const typFarg={laxa:'var(--accent2)',prov:'var(--red)',inlamning:'var(--green)',info:'var(--yellow)'};
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--soft);">
+      <div style="width:4px;height:36px;border-radius:2px;background:${typFarg[u.typ]||'#ddd'};flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div style="font-size:.72rem;color:var(--muted);">${typLabels[u.typ]||u.typ} · ${u.amne}${u.datum?' · '+u.datum:''}</div>
+        <div style="font-size:.88rem;font-weight:600;">${u.titel}</div>
+        ${u.beskrivning?`<div style="font-size:.78rem;color:var(--muted);">${u.beskrivning}</div>`:''}
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="toogleArkivera(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid #ddd;background:white;font-size:.75rem;cursor:pointer;color:var(--muted);">${u.arkiverad?'Återställ':'Arkivera'}</button>
+        <button onclick="taBortUppgift(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid #fdd;background:#fdf0f0;font-size:.75rem;cursor:pointer;color:var(--red);">Ta bort</button>
+      </div>
+    </div>`;
+  };
+
   el.innerHTML=`
     <div style="background:white;border-radius:12px;padding:18px 20px;margin-bottom:8px;">
       <div style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;">Lägg till ny</div>
@@ -2021,23 +2259,16 @@ function renderUppgifterPanel(){
         <button onclick="laggTillUppgift()" style="padding:8px 18px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">Lägg till</button>
       </div>
     </div>
-    ${uppgifter.length?`<div style="background:white;border-radius:12px;padding:4px 0;">
-      ${uppgifter.map((u,i)=>{
-        const typFarg={laxa:'var(--accent2)',prov:'var(--red)',inlamning:'var(--green)',info:'var(--yellow)'};
-        return `<div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--soft);${u.arkiverad?'opacity:.4':''}">
-          <div style="width:4px;height:36px;border-radius:2px;background:${typFarg[u.typ]||'#ddd'};flex-shrink:0;"></div>
-          <div style="flex:1;">
-            <div style="font-size:.72rem;color:var(--muted);">${typLabels[u.typ]||u.typ} · ${u.amne}${u.datum?' · '+u.datum:''}</div>
-            <div style="font-size:.88rem;font-weight:600;">${u.titel}</div>
-            ${u.beskrivning?`<div style="font-size:.78rem;color:var(--muted);">${u.beskrivning}</div>`:''}
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button onclick="toogleArkivera(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid #ddd;background:white;font-size:.75rem;cursor:pointer;color:var(--muted);">${u.arkiverad?'Återställ':'Arkivera'}</button>
-            <button onclick="taBortUppgift(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid #fdd;background:#fdf0f0;font-size:.75rem;cursor:pointer;color:var(--red);">Ta bort</button>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`:'<div style="background:white;border-radius:12px;padding:16px 20px;color:var(--muted);font-size:.88rem;">Inga uppgifter tillagda än.</div>'}`;
+    ${aktiva.length?`<div style="background:white;border-radius:12px;padding:4px 0;margin-bottom:8px;">
+      ${aktiva.map((u)=>renderRad(u,uppgifter.indexOf(u))).join('')}
+    </div>`:'<div style="background:white;border-radius:12px;padding:14px 18px;margin-bottom:8px;color:var(--muted);font-size:.88rem;">Inga aktiva uppgifter.</div>'}
+    ${arkiverade.length?`<div style="margin-bottom:8px;">
+      <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.textContent=this.textContent.includes('Visa')?'▲ Dölj arkiv':'▼ Visa arkiv (${arkiverade.length})';"
+        style="background:none;border:none;color:var(--muted);font-size:.82rem;cursor:pointer;padding:4px 0;">▼ Visa arkiv (${arkiverade.length})</button>
+      <div style="display:none;background:white;border-radius:12px;padding:4px 0;margin-top:6px;opacity:.6;">
+        ${arkiverade.map((u)=>renderRad(u,uppgifter.indexOf(u))).join('')}
+      </div>
+    </div>`:''}`;
 }
 
 function laggTillUppgift(){
