@@ -408,6 +408,11 @@
     <div class="tab-content" id="tabOvningar">
       <div id="ovningWrap"></div>
     </div>
+
+    <!-- MEDDELANDEN (elev) -->
+    <div class="tab-content" id="tabMeddelanden">
+      <div style="max-width:640px;margin:0 auto;padding:24px 20px 80px;" id="elevMeddWrap"></div>
+    </div>
   </div>
 
   <div class="bottom-nav">
@@ -425,6 +430,9 @@
     </button>
     <button class="nav-tab" id="navOvningar" onclick="byttFlik('Ovningar')">
       <span class="nav-tab-icon">🔢</span>Öva
+    </button>
+    <button class="nav-tab" id="navMeddelanden" onclick="byttFlik('Meddelanden')">
+      <span class="nav-tab-icon">✉️</span>Meddelanden
     </button>
   </div>
 </div>
@@ -445,24 +453,65 @@
       <p style="margin-top:16px;font-size:.78rem;color:var(--muted)">(Demokod: <strong>LARARE</strong>)</p>
     </div>
     <div id="lararDash" style="display:none;">
-      <div class="teacher-wrap">
-        <h2>Lärarvy</h2>
-        <p class="t-subtitle" id="teacherSubtitle"></p>
-        <div class="insights-grid" id="insightsGrid"></div>
-        <div class="section-title">Meddelanden från elever</div>
-        <div id="meddelandenPanel"></div>
-        <div class="section-title">Feedback från elever</div>
-        <div id="feedbackPanel"></div>
-        <div class="section-title">Läxor, prov & info</div>
-        <div id="uppgifterPanel"></div>
-        <div class="section-title">Kodord denna vecka</div>
-        <div id="kodordPanel"></div>
-        <div class="section-title">Övningar – klassöversikt</div>
-        <div id="ovningOversikt" style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;color:var(--muted);font-size:.88rem;">Laddar...</div>
-        <div class="section-title">Svåraste frågorna</div>
-        <div id="svaragteFragor"></div>
-        <div class="section-title">Alla inlämningar</div>
-        <div class="student-table" id="studentTable"></div>
+      <!-- LÄRARE FLIKAR -->
+      <div style="background:white;border-bottom:1px solid var(--soft);display:flex;overflow-x:auto;position:sticky;top:0;z-index:10;">
+        <button class="mode-tab active" id="lTabElever" onclick="byttLararFlik('Elever')" style="white-space:nowrap;">📋 Elever</button>
+        <button class="mode-tab" id="lTabMeddelanden" onclick="byttLararFlik('Meddelanden')" style="white-space:nowrap;">✉️ Meddelanden</button>
+        <button class="mode-tab" id="lTabFeedback" onclick="byttLararFlik('Feedback')" style="white-space:nowrap;">💡 Feedback</button>
+        <button class="mode-tab" id="lTabLaxor" onclick="byttLararFlik('Laxor')" style="white-space:nowrap;">📚 Läxor & prov</button>
+        <button class="mode-tab" id="lTabStatistik" onclick="byttLararFlik('Statistik')" style="white-space:nowrap;">📊 Statistik</button>
+      </div>
+
+      <!-- ELEVER-FLIKEN -->
+      <div id="lFlikElever" style="display:block;">
+        <div class="teacher-wrap">
+          <h2>Elever</h2>
+          <p class="t-subtitle" id="teacherSubtitle"></p>
+          <div class="insights-grid" id="insightsGrid"></div>
+          <div class="section-title">Kodord denna vecka</div>
+          <div id="kodordPanel"></div>
+          <div class="section-title">Alla inlämningar</div>
+          <div class="student-table" id="studentTable"></div>
+        </div>
+      </div>
+
+      <!-- MEDDELANDEN-FLIKEN -->
+      <div id="lFlikMeddelanden" style="display:none;">
+        <div class="teacher-wrap">
+          <h2>Meddelanden</h2>
+          <p class="t-subtitle">Meddelanden från dina elever</p>
+          <div id="meddelandenPanel"></div>
+        </div>
+      </div>
+
+      <!-- FEEDBACK-FLIKEN -->
+      <div id="lFlikFeedback" style="display:none;">
+        <div class="teacher-wrap">
+          <h2>Feedback</h2>
+          <p class="t-subtitle">Idéer och tankar från elever</p>
+          <div id="feedbackPanel"></div>
+        </div>
+      </div>
+
+      <!-- LÄXOR-FLIKEN -->
+      <div id="lFlikLaxor" style="display:none;">
+        <div class="teacher-wrap">
+          <h2>Läxor, prov & info</h2>
+          <p class="t-subtitle">Syns på elevernas startsida</p>
+          <div id="uppgifterPanel"></div>
+        </div>
+      </div>
+
+      <!-- STATISTIK-FLIKEN -->
+      <div id="lFlikStatistik" style="display:none;">
+        <div class="teacher-wrap">
+          <h2>Statistik</h2>
+          <p class="t-subtitle">Övningar och svåraste frågorna</p>
+          <div class="section-title">Övningar – klassöversikt</div>
+          <div id="ovningOversikt" style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:8px;color:var(--muted);font-size:.88rem;">Laddar...</div>
+          <div class="section-title">Svåraste frågorna</div>
+          <div id="svaragteFragor"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -506,6 +555,8 @@
 <div class="modal-overlay" id="granskningModal" onclick="if(event.target===this)closeGranskningModal()">
   <div class="modal" style="max-width:540px;" id="granskningModalContent"></div>
 </div>
+
+<div class="modal-overlay" id="svarModal" onclick="if(event.target===this)closeSvarModal()">
   <div class="modal" style="max-width:480px;">
     <h3 style="margin-bottom:4px;" id="svarModalTitel">Svara</h3>
     <div style="color:var(--muted);font-size:.82rem;margin-bottom:12px;" id="svarModalMeta"></div>
@@ -865,25 +916,19 @@ function renderHem(){
     }
   }
 
-  // Meddelanden (svar från läraren)
+  // Meddelanden – visa bara notis om olästa svar
   const meddEl=document.getElementById('hemMeddelanden');
   if(meddEl){
-    const medd=(window._elevMeddelanden||[]).filter(m=>m.svar);
-    const knappar=`<div style="display:flex;gap:8px;margin-bottom:20px;">
-      <button onclick="document.getElementById('meddelandeModal').classList.add('open')" style="flex:1;padding:12px;background:var(--ink);color:var(--paper);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">✉️ Skicka meddelande</button>
-      <button onclick="document.getElementById('feedbackModal').classList.add('open')" style="flex:1;padding:12px;background:white;border:2px solid var(--soft);color:var(--ink);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">💡 Lämna feedback</button>
-    </div>`;
-    if(medd.length){
-      meddEl.innerHTML=knappar+`<div style="margin-bottom:20px;">
-        <div style="font-family:'Fraunces',serif;font-size:.9rem;font-weight:700;margin-bottom:8px;color:var(--muted);">SVAR FRÅN LÄRAREN</div>
-        ${medd.map(m=>`<div style="background:white;border-radius:12px;padding:14px 18px;border-left:4px solid var(--green);margin-bottom:8px;">
-          <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px;">${m.datum} ${m.tid} · Du frågade: "${m.text.length>60?m.text.slice(0,60)+'…':m.text}"</div>
-          <div style="font-size:.92rem;line-height:1.5;">${m.svar}</div>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">${m.svarDatum||''} ${m.svarTid||''}</div>
-        </div>`).join('')}
+    const obesvarade=(window._elevMeddelanden||[]).filter(m=>m.svar);
+    const nySvar=obesvarade.filter(m=>m.svar&&!m._sett);
+    if(nySvar.length){
+      meddEl.innerHTML=`<div style="background:white;border-radius:12px;padding:14px 18px;border-left:4px solid var(--green);margin-bottom:20px;cursor:pointer;" onclick="byttFlik('Meddelanden')">
+        <div style="font-size:.72rem;color:var(--green);font-weight:600;margin-bottom:3px;">NYT SVAR FRÅN LÄRAREN</div>
+        <div style="font-size:.88rem;">${nySvar[0].svar.length>80?nySvar[0].svar.slice(0,80)+'…':nySvar[0].svar}</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:4px;">Tryck för att se alla meddelanden →</div>
       </div>`;
     }else{
-      meddEl.innerHTML=knappar;
+      meddEl.innerHTML='';
     }
   }
 
@@ -958,13 +1003,16 @@ function renderMeddelandenPanel(){
     return;
   }
   el.innerHTML=`<div style="background:white;border-radius:12px;padding:4px 0;margin-bottom:8px;">
-    ${medd.map(m=>`<div style="padding:14px 18px;border-bottom:1px solid var(--soft);">
+    ${medd.map((m,i)=>`<div style="padding:14px 18px;border-bottom:1px solid var(--soft);">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
-        <div>
+        <div style="flex:1;">
           <div style="font-size:.72rem;color:var(--muted);margin-bottom:3px;">${PLANET_EMOJI[m.kodord]||''} ${m.kodord} · ${m.datum} ${m.tid}</div>
           <div style="font-size:.92rem;line-height:1.5;">${m.text}</div>
         </div>
-        ${!m.svar?`<button onclick="openSvarModal('${m.id}','${m.kodord}',\`${m.text.replace(/`/g,"'")}\`,'${m.datum}','${m.tid}')" style="padding:6px 14px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;flex-shrink:0;">Svara</button>`:''}
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          ${!m.svar?`<button onclick="openSvarModal('${m.id}','${m.kodord}',\`${m.text.replace(/`/g,"'")}\`,'${m.datum}','${m.tid}')" style="padding:6px 12px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">Svara</button>`:''}
+          <button onclick="taBortMeddelande(${i})" style="padding:6px 10px;border:1px solid #fdd;background:#fdf0f0;border-radius:8px;font-size:.75rem;cursor:pointer;color:var(--red);">✕</button>
+        </div>
       </div>
       ${m.svar?`<div style="background:#e6f7f1;border-radius:8px;padding:10px 14px;font-size:.85rem;line-height:1.5;">
         <div style="font-size:.7rem;color:var(--green);font-weight:600;margin-bottom:3px;">DITT SVAR · ${m.svarDatum||''} ${m.svarTid||''}</div>
@@ -972,6 +1020,12 @@ function renderMeddelandenPanel(){
       </div>`:'<div style="font-size:.78rem;color:var(--muted);font-style:italic;">Ej besvarat</div>'}
     </div>`).join('')}
   </div>`;
+}
+
+function taBortMeddelande(idx){
+  if(!window._allaMeddelanden)return;
+  window._allaMeddelanden.splice(idx,1);
+  renderMeddelandenPanel();
 }
 
 function renderFeedbackPanel(){
@@ -983,11 +1037,20 @@ function renderFeedbackPanel(){
     return;
   }
   el.innerHTML=`<div style="background:white;border-radius:12px;padding:4px 0;margin-bottom:8px;">
-    ${fb.map(f=>`<div style="padding:14px 18px;border-bottom:1px solid var(--soft);">
-      <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px;">${PLANET_EMOJI[f.kodord]||'👤'} ${f.kodord} · ${f.datum} ${f.tid}</div>
-      <div style="font-size:.92rem;line-height:1.5;">${f.text}</div>
+    ${fb.map((f,i)=>`<div style="padding:14px 18px;border-bottom:1px solid var(--soft);display:flex;align-items:flex-start;gap:8px;">
+      <div style="flex:1;">
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px;">${PLANET_EMOJI[f.kodord]||'👤'} ${f.kodord} · ${f.datum} ${f.tid}</div>
+        <div style="font-size:.92rem;line-height:1.5;">${f.text}</div>
+      </div>
+      <button onclick="taBortFeedback(${i})" style="padding:6px 10px;border:1px solid #fdd;background:#fdf0f0;border-radius:8px;font-size:.75rem;cursor:pointer;color:var(--red);flex-shrink:0;">✕</button>
     </div>`).join('')}
   </div>`;
+}
+
+function taBortFeedback(idx){
+  if(!window._allaFeedback)return;
+  window._allaFeedback.splice(idx,1);
+  renderFeedbackPanel();
 }
 
 // ── PROFIL/STATISTIK ─────────────────────────────────────────
@@ -1192,11 +1255,46 @@ async function sparaMal(){
 function byttFlik(flik){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  const map={Hem:'tabHem',Quiz:'tabQuiz',Profil:'tabProfil',Mal:'tabMal',Ovningar:'tabOvningar'};
-  const navMap={Hem:'navHem',Quiz:'navQuiz',Profil:'navProfil',Mal:'navMal',Ovningar:'navOvningar'};
+  const map={Hem:'tabHem',Quiz:'tabQuiz',Profil:'tabProfil',Mal:'tabMal',Ovningar:'tabOvningar',Meddelanden:'tabMeddelanden'};
+  const navMap={Hem:'navHem',Quiz:'navQuiz',Profil:'navProfil',Mal:'navMal',Ovningar:'navOvningar',Meddelanden:'navMeddelanden'};
   document.getElementById(map[flik])?.classList.add('active');
   document.getElementById(navMap[flik])?.classList.add('active');
   if(flik==='Ovningar')renderOvningar();
+  if(flik==='Meddelanden')renderElevMeddelanden();
+}
+
+function byttLararFlik(flik){
+  const flikar=['Elever','Meddelanden','Feedback','Laxor','Statistik'];
+  flikar.forEach(f=>{
+    const el=document.getElementById(`lFlik${f}`);
+    const btn=document.getElementById(`lTab${f}`);
+    if(el)el.style.display=f===flik?'block':'none';
+    if(btn)btn.classList.toggle('active',f===flik);
+  });
+}
+
+function renderElevMeddelanden(){
+  const wrap=document.getElementById('elevMeddWrap');
+  if(!wrap)return;
+  const medd=window._elevMeddelanden||[];
+  wrap.innerHTML=`
+    <h2 style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;margin-bottom:4px;">Meddelanden</h2>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:20px;">Kommunikation med din lärare</p>
+    <div style="display:flex;gap:8px;margin-bottom:24px;">
+      <button onclick="document.getElementById('meddelandeModal').classList.add('open')" style="flex:1;padding:12px;background:var(--ink);color:var(--paper);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">✉️ Nytt meddelande</button>
+      <button onclick="document.getElementById('feedbackModal').classList.add('open')" style="flex:1;padding:12px;background:white;border:2px solid var(--soft);color:var(--ink);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;">💡 Lämna feedback</button>
+    </div>
+    ${medd.length?medd.map(m=>`
+      <div style="background:white;border-radius:12px;padding:16px 18px;margin-bottom:12px;border-left:4px solid ${m.svar?'var(--green)':'var(--soft)'};">
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">${m.datum} ${m.tid}</div>
+        <div style="font-size:.9rem;margin-bottom:${m.svar?'12px':'0'};line-height:1.5;"><strong>Du:</strong> ${m.text}</div>
+        ${m.svar?`<div style="background:#e6f7f1;border-radius:8px;padding:10px 14px;font-size:.88rem;line-height:1.5;">
+          <div style="font-size:.7rem;color:var(--green);font-weight:600;margin-bottom:3px;">SVAR FRÅN LÄRAREN · ${m.svarDatum||''} ${m.svarTid||''}</div>
+          ${m.svar}
+        </div>`:'<div style="font-size:.78rem;color:var(--muted);font-style:italic;margin-top:4px;">Väntar på svar…</div>'}
+      </div>`).join('')
+    :'<div style="text-align:center;padding:40px 20px;color:var(--muted);"><div style="font-size:2rem;margin-bottom:12px;">✉️</div><p>Inga meddelanden än. Skriv till din lärare!</p></div>'}`;
+}
 }
 
 function visaProfil(){
