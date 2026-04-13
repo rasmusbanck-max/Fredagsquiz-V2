@@ -450,7 +450,6 @@
       <input type="password" id="teacherPinInput" placeholder="Lärarkod" onkeydown="if(event.key==='Enter')checkTeacherPin()">
       <button onclick="checkTeacherPin()" style="width:100%;padding:14px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-size:.95rem;font-weight:500;cursor:pointer;">Logga in</button>
       <div class="error-msg" id="pinError"></div>
-      <p style="margin-top:16px;font-size:.78rem;color:var(--muted)">(Demokod: <strong>LARARE</strong>)</p>
     </div>
     <div id="lararDash" style="display:none;">
       <!-- LÄRARE FLIKAR -->
@@ -572,7 +571,7 @@
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbxyNbwegj7ZiO5qodpvs9N3Nr9guenUkmzR9nfz8cHThTRJu-QenyYRhvyH28qgcMvz/exec";
-const TEACHER_PIN="LARARE";
+const TEACHER_PIN="IRONMAN";
 const APPROVED_CODES=["MERKURIUS","VENUS","MARS","JUPITER","SATURNUS","URANUS","NEPTUNUS","PLUTO","MÅNEN","TITAN"];
 const PLANET_EMOJI={MERKURIUS:"☿",VENUS:"♀",MARS:"♂",JUPITER:"🪐",SATURNUS:"🪐",URANUS:"🔵",NEPTUNUS:"🔵",PLUTO:"🌑",MÅNEN:"🌕",TITAN:"🟠"};
 const LEVEL_ORDER=['wrong','e','c','a'];
