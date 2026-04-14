@@ -305,10 +305,31 @@
 <div id="loginScreen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;">
   <div style="font-family:'Fraunces',serif;font-size:1.1rem;opacity:.4;margin-bottom:48px;">Fredagsquiz</div>
   <h1 style="font-family:'Fraunces',serif;font-size:3rem;font-weight:900;line-height:1;margin-bottom:8px;text-align:center;">Välkommen</h1>
-  <p style="color:var(--muted);margin-bottom:40px;font-size:.95rem;">Skriv in ditt kodord för att logga in</p>
+  <p style="color:var(--muted);margin-bottom:40px;font-size:.95rem;" id="loginSubtext">Skriv in ditt kodord för att logga in</p>
   <div style="width:100%;max-width:360px;">
-    <input type="text" id="loginInput" placeholder="Ditt kodord" maxlength="20" style="text-align:center;letter-spacing:.1em;text-transform:uppercase;font-size:1.2rem;font-family:'Fraunces',serif;" onkeydown="if(event.key==='Enter')logga()">
-    <button onclick="logga()" style="width:100%;padding:16px;background:var(--ink);color:var(--paper);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;margin-top:-2px;transition:background .15s;" onmouseover="this.style.background='#e8572a'" onmouseout="this.style.background='#1a1a2e'">Logga in</button>
+
+    <!-- STEG 1: Kodord -->
+    <div id="loginSteg1">
+      <input type="text" id="loginInput" placeholder="Ditt kodord" maxlength="30" style="text-align:center;letter-spacing:.1em;text-transform:uppercase;font-size:1.2rem;font-family:'Fraunces',serif;" onkeydown="if(event.key==='Enter')kollakodord()">
+      <button onclick="kollakodord()" style="width:100%;padding:16px;background:var(--ink);color:var(--paper);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;margin-top:8px;transition:background .15s;" onmouseover="this.style.background='#e8572a'" onmouseout="this.style.background='#1a1a2e'">Fortsätt →</button>
+    </div>
+
+    <!-- STEG 2a: Välj pinkod (ny användare) -->
+    <div id="loginSteg2ny" style="display:none;">
+      <div style="background:#e8f0ff;border-radius:10px;padding:12px 16px;font-size:.88rem;margin-bottom:16px;color:var(--accent2);">👋 Första gången du loggar in – välj en pinkod på 4 siffror som du kommer ihåg!</div>
+      <input type="password" id="pinNy1" placeholder="Välj pinkod (4 siffror)" maxlength="4" inputmode="numeric" style="text-align:center;letter-spacing:.3em;font-size:1.4rem;font-family:'Fraunces',serif;" onkeydown="if(event.key==='Enter')document.getElementById('pinNy2').focus()">
+      <input type="password" id="pinNy2" placeholder="Bekräfta pinkod" maxlength="4" inputmode="numeric" style="text-align:center;letter-spacing:.3em;font-size:1.4rem;font-family:'Fraunces',serif;margin-top:8px;" onkeydown="if(event.key==='Enter')skapaPinkod()">
+      <button onclick="skapaPinkod()" style="width:100%;padding:16px;background:var(--ink);color:var(--paper);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;margin-top:8px;">Skapa pinkod</button>
+    </div>
+
+    <!-- STEG 2b: Ange pinkod (återkommande) -->
+    <div id="loginSteg2pin" style="display:none;">
+      <div style="font-size:.88rem;color:var(--muted);text-align:center;margin-bottom:12px;" id="loginKodordVald"></div>
+      <input type="password" id="pinInput" placeholder="Pinkod" maxlength="4" inputmode="numeric" style="text-align:center;letter-spacing:.3em;font-size:1.4rem;font-family:'Fraunces',serif;" onkeydown="if(event.key==='Enter')loggaMedPin()">
+      <button onclick="loggaMedPin()" style="width:100%;padding:16px;background:var(--ink);color:var(--paper);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;margin-top:8px;transition:background .15s;" onmouseover="this.style.background='#e8572a'" onmouseout="this.style.background='#1a1a2e'">Logga in</button>
+      <button onclick="tillbakaSteg1()" style="width:100%;padding:10px;background:none;border:none;color:var(--muted);font-size:.82rem;cursor:pointer;margin-top:4px;">← Byt kodord</button>
+    </div>
+
     <div style="color:var(--red);font-size:.85rem;margin-top:8px;text-align:center;min-height:20px;" id="loginError"></div>
     <div style="margin-top:24px;text-align:center;">
       <button onclick="visaLararLogin()" style="background:none;border:none;color:var(--muted);font-size:.82rem;cursor:pointer;text-decoration:underline;">Lärarvy →</button>
@@ -572,8 +593,8 @@
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbxyNbwegj7ZiO5qodpvs9N3Nr9guenUkmzR9nfz8cHThTRJu-QenyYRhvyH28qgcMvz/exec";
 const TEACHER_PIN="IRONMAN";
-const APPROVED_CODES=["MERKURIUS","VENUS","MARS","JUPITER","SATURNUS","URANUS","NEPTUNUS","PLUTO","MÅNEN","TITAN"];
-const PLANET_EMOJI={MERKURIUS:"☿",VENUS:"♀",MARS:"♂",JUPITER:"🪐",SATURNUS:"🪐",URANUS:"🔵",NEPTUNUS:"🔵",PLUTO:"🌑",MÅNEN:"🌕",TITAN:"🟠"};
+const APPROVED_CODES=["MAKRILLARNA","TASTYCHEESE","HALLÓ","MACKA","HELIUM","MARS","KOKOSBOLL","MAPLELEAF","PIE","TASTYCHICKENBURGER","AROT","KETCHUP","SEMLAN","BOK","ZOMBIEJUMPER","JORDEN","REGNBÅGEN","VATTEN","LEJON"];
+const PLANET_EMOJI={MAKRILLARNA:"🐟",TASTYCHEESE:"🧀",HALLÓ:"👋",MACKA:"🥪",HELIUM:"🎈",MARS:"🔴",KOKOSBOLL:"🥥",MAPLELEAF:"🍁",PIE:"🥧",TASTYCHICKENBURGER:"🍔",AROT:"🥕",KETCHUP:"🍅",SEMLAN:"🍞",BOK:"📖",ZOMBIEJUMPER:"🧟",JORDEN:"🌍",REGNBÅGEN:"🌈",VATTEN:"💧",LEJON:"🦁"};
 const LEVEL_ORDER=['wrong','e','c','a'];
 const LEVEL_LABELS={a:"Välutvecklat",c:"Utvecklat",e:"Godkänt",wrong:"Hade fel"};
 const LEVEL_SCORES={a:1,c:0.67,e:0.33,wrong:0};
@@ -775,17 +796,112 @@ async function loadAllaFeedback(){
   }catch{return[];}
 }
 
-// ── INLOGG ──────────────────────────────────────────────────
-function logga(){
+// ── PINKOD-HASHNING ──────────────────────────────────────────
+async function hashPin(pin){
+  const encoder=new TextEncoder();
+  const data=encoder.encode(pin+'fq_salt_2026');
+  const hashBuffer=await crypto.subtle.digest('SHA-256',data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function hamtaPinkod(kodord){
+  try{
+    const url=new URL(SHEETS_URL);
+    url.searchParams.set('action','getPinkod');
+    url.searchParams.set('kodord',kodord);
+    const r=await fetch(url.toString());
+    const d=await r.json();
+    return d.hash||null;
+  }catch{return null;}
+}
+
+async function sparaPinkod(kodord,hash){
+  try{
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:'savePinkod',kodord,hash})});
+  }catch{}
+}
+
+// ── INLOGG-FLÖDE ─────────────────────────────────────────────
+let _loginKodord=null;
+
+function visaSteg(steg){
+  document.getElementById('loginSteg1').style.display=steg===1?'block':'none';
+  document.getElementById('loginSteg2ny').style.display=steg==='ny'?'block':'none';
+  document.getElementById('loginSteg2pin').style.display=steg==='pin'?'block':'none';
+  document.getElementById('loginError').textContent='';
+}
+
+function tillbakaSteg1(){
+  _loginKodord=null;
+  visaSteg(1);
+  document.getElementById('loginInput').value='';
+  document.getElementById('loginSubtext').textContent='Skriv in ditt kodord för att logga in';
+}
+
+async function kollakodord(){
   const code=document.getElementById('loginInput').value.trim().toUpperCase();
   if(!code){document.getElementById('loginError').textContent='Ange ditt kodord.';return;}
   if(!APPROVED_CODES.includes(code)){document.getElementById('loginError').textContent='Okänt kodord. Kolla med din lärare.';return;}
   document.getElementById('loginError').textContent='';
+  _loginKodord=code;
+
+  // Kolla om pinkod finns
+  const btn=document.querySelector('#loginSteg1 button');
+  if(btn){btn.textContent='Kollar...';btn.disabled=true;}
+  const befintligHash=await hamtaPinkod(code);
+  if(btn){btn.textContent='Fortsätt →';btn.disabled=false;}
+
+  if(befintligHash){
+    // Återkommande elev – be om pinkod
+    document.getElementById('loginKodordVald').textContent=`Inloggad som ${PLANET_EMOJI[code]||''} ${code}`;
+    document.getElementById('loginSubtext').textContent='Ange din pinkod';
+    visaSteg('pin');
+    setTimeout(()=>document.getElementById('pinInput')?.focus(),100);
+  }else{
+    // Ny elev – skapa pinkod
+    document.getElementById('loginSubtext').textContent='Välj din pinkod';
+    visaSteg('ny');
+    setTimeout(()=>document.getElementById('pinNy1')?.focus(),100);
+  }
+}
+
+async function skapaPinkod(){
+  const pin1=document.getElementById('pinNy1').value.trim();
+  const pin2=document.getElementById('pinNy2').value.trim();
+  const err=document.getElementById('loginError');
+  if(!/^\d{4}$/.test(pin1)){err.textContent='Pinkoden måste vara exakt 4 siffror.';return;}
+  if(pin1!==pin2){err.textContent='Pinkoderna matchar inte.';return;}
+  err.textContent='';
+  const hash=await hashPin(pin1);
+  await sparaPinkod(_loginKodord,hash);
+  slutforInlogg(_loginKodord);
+}
+
+async function loggaMedPin(){
+  const pin=document.getElementById('pinInput').value.trim();
+  const err=document.getElementById('loginError');
+  if(!/^\d{4}$/.test(pin)){err.textContent='Ange din 4-siffriga pinkod.';return;}
+  const hash=await hashPin(pin);
+  const sparadHash=await hamtaPinkod(_loginKodord);
+  if(hash===sparadHash){
+    err.textContent='';
+    slutforInlogg(_loginKodord);
+  }else{
+    err.textContent='Fel pinkod. Försök igen.';
+    document.getElementById('pinInput').value='';
+  }
+}
+
+function slutforInlogg(code){
   currentStudent=code;
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('elevApp').classList.add('active');
   initElevApp();
 }
+
+// Behålls för bakåtkompatibilitet men används inte längre
+function logga(){kollakodord();}
 function visaLararLogin(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('lararApp').style.display='block';
@@ -874,12 +990,20 @@ function renderHem(){
   const uppgifterEl=document.getElementById('hemUppgifter');
   if(uppgifterEl){
     const uppgifter=window._hemUppgifter||[];
-    if(uppgifter.length){
+    const aktiva=uppgifter.filter(u=>!u.arkiverad);
+    if(aktiva.length){
       const typIkon={laxa:'📚',prov:'✏️',inlamning:'📎',info:'📢'};
       const typFarg={laxa:'var(--accent2)',prov:'var(--red)',inlamning:'var(--green)',info:'var(--yellow)'};
+      // Sortera: uppgifter med datum närmast i tid först, utan datum sist
+      const sorterade=[...aktiva].sort((a,b)=>{
+        if(!a.datumRaw&&!b.datumRaw)return 0;
+        if(!a.datumRaw)return 1;
+        if(!b.datumRaw)return -1;
+        return new Date(a.datumRaw)-new Date(b.datumRaw);
+      });
       uppgifterEl.innerHTML=`<div style="margin-bottom:20px;">
         <div style="font-family:'Fraunces',serif;font-size:.9rem;font-weight:700;margin-bottom:8px;color:var(--muted);">KOMMANDE</div>
-        ${uppgifter.filter(u=>!u.arkiverad).map(u=>`
+        ${sorterade.map(u=>`
           <div style="background:white;border-radius:12px;padding:14px 18px;border-left:4px solid ${typFarg[u.typ]||'var(--soft)'};margin-bottom:8px;">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
               <div>
@@ -2600,12 +2724,24 @@ function renderKodordPanel(){
         <div class="kodord-name">${PLANET_EMOJI[code]||'🌟'} ${code}
           <span class="kodord-status ${used?'status-used':'status-free'}">${used?'Använt':'Ledigt'}</span>
         </div>
-        ${used?`<button class="kodord-unlock" onclick="unlockCode('${code}')">Lås upp</button>`:''}
+        <div style="display:flex;gap:6px;">
+          ${used?`<button class="kodord-unlock" onclick="unlockCode('${code}')">Lås upp quiz</button>`:''}
+          <button class="kodord-unlock" onclick="återställPinkod('${code}')" style="color:var(--red);border-color:#fdd;">Nolla pin</button>
+        </div>
       </div>`;
     }).join('');
     document.getElementById('kodordPanel').innerHTML=`<div class="kodord-panel">${rows}</div>
-      <button class="kodord-unlock-all" onclick="unlockAllCodes()">Lås upp alla</button>`;
+      <button class="kodord-unlock-all" onclick="unlockAllCodes()">Lås upp alla quiz</button>`;
   }catch{}
+}
+
+async function återställPinkod(code){
+  if(!confirm(`Nolla pinkoden för ${code}? Eleven får välja en ny vid nästa inloggning.`))return;
+  try{
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:'deletePinkod',kodord:code})});
+    alert(`✓ Pinkod för ${code} nollad.`);
+  }catch{alert('Något gick fel.');}
 }
 function unlockCode(code){
   try{const d=JSON.parse(localStorage.getItem('fq_used')||'{}');delete d[code];localStorage.setItem('fq_used',JSON.stringify(d));renderKodordPanel();}catch{}
