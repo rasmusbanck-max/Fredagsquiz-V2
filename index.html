@@ -593,8 +593,9 @@
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbxyNbwegj7ZiO5qodpvs9N3Nr9guenUkmzR9nfz8cHThTRJu-QenyYRhvyH28qgcMvz/exec";
 const TEACHER_PIN="IRONMAN";
-const APPROVED_CODES=["MAKRILLARNA","TASTYCHEESE","HELLÖ","MACKA","HELIUM","MARS","KOKOSBOLL","MAPLELEAF","PIE","TASTYCHICKENBURGER","AROT","KETCHUP","SEMLAN","BOK","ZOMBIEJUMPER","JORDEN","REGNBÅGEN","VATTEN","LEJON","ANDERS","WOLF"];
-const PLANET_EMOJI={MAKRILLARNA:"🐟",TASTYCHEESE:"🧀",HELLÖ:"👋",MACKA:"🥪",HELIUM:"🎈",MARS:"🔴",KOKOSBOLL:"🥥",MAPLELEAF:"🍁",PIE:"🥧",TASTYCHICKENBURGER:"🍔",AROT:"🥕",KETCHUP:"🍅",SEMLAN:"🍞",BOK:"📖",ZOMBIEJUMPER:"🧟",JORDEN:"🌍",REGNBÅGEN:"🌈",VATTEN:"💧",LEJON:"🦁",ANDERS:"🧑",WOLF:"🐺"};
+const APPROVED_CODES=["MAKRILLARNA","TASTYCHEESE","HELLÖ","MACKA","HELIUM","MARS","KOKOSBOLL","MAPLELEAF","PIE","TASTYCHICKENBURGER","AROT","KETCHUP","SEMLAN","BOK","ZOMBIEJUMPER","JORDEN","REGNBÅGEN","VATTEN","LEJON","ANDERS","WOLF","FRÖLUNDA","DEMO"];
+const PLANET_EMOJI={MAKRILLARNA:"🐟",TASTYCHEESE:"🧀",HELLÖ:"👋",MACKA:"🥪",HELIUM:"🎈",MARS:"🔴",KOKOSBOLL:"🥥",MAPLELEAF:"🍁",PIE:"🥧",TASTYCHICKENBURGER:"🍔",AROT:"🥕",KETCHUP:"🍅",SEMLAN:"🍞",BOK:"📖",ZOMBIEJUMPER:"🧟",JORDEN:"🌍",REGNBÅGEN:"🌈",VATTEN:"💧",LEJON:"🦁",ANDERS:"🧑",WOLF:"🐺",FRÖLUNDA:"🏒",DEMO:"👀"};
+const DEMO_KOD="DEMO";
 const LEVEL_ORDER=['wrong','e','c','a'];
 const LEVEL_LABELS={a:"Välutvecklat",c:"Utvecklat",e:"Godkänt",wrong:"Hade fel"};
 const LEVEL_SCORES={a:1,c:0.67,e:0.33,wrong:0};
@@ -654,41 +655,40 @@ function lockCode(code){
 }
 
 const quizData={week:currentWeek,questions:[
-  {id:1,subject:"Matematik",type:"multiple",
-    text:"Vad är 15% av 200?",
-    options:["20","25","30","35"],correct:2,
-    feedback_correct:"Rätt! 15% av 200 = 0,15 × 200 = 30.",
-    feedback_wrong:"Tänk om. 15% betyder 15 av 100. Hur många är det av 200?",
-    facit:"Svaret är 30. 15% = 15/100 = 0,15. Multiplicera: 0,15 × 200 = 30."},
-  {id:2,subject:"Svenska",type:"open",useLevels:true,
-    text:"Förklara skillnaden mellan en berättande och en förklarande text. Ge ett exempel på vardera.",
-    tip:"Tänk på syftet med texten. Vill den berätta en historia eller förklara hur något fungerar?",
-    kompletteraTip:"Försök lägga till varför de två texttyperna används i olika sammanhang, och välj ett mer specifikt exempel.",
+  {id:1,subject:"Studieteknik",type:"multiple",
+    text:"Vad innebär retrieval practice (hämtningsövning) som studieteknik?",
+    options:["Att läsa igenom anteckningar många gånger","Att försöka minnas information utan att titta i boken","Att markera viktiga ord med färgpennor","Att lyssna på läraren extra noga"],correct:1,
+    feedback_correct:"Rätt! Retrieval practice handlar om att aktivt hämta fram kunskap ur minnet, vilket stärker inlärningen mer än passiv läsning.",
+    feedback_wrong:"Retrieval practice handlar om att anstränga minnet aktivt, inte om att läsa eller lyssna passivt.",
+    facit:"Rätt svar: Att försöka minnas information utan att titta i boken. Att anstränga sig att hämta fram kunskap ur minnet är en av de mest effektiva studieteknikerna som finns."},
+  {id:2,subject:"Matematik",type:"multiple",
+    text:"Vilket tal har siffran 4 i tiotalens plats?",
+    options:["4 019","3 402","5 748","2 084"],correct:1,
+    feedback_correct:"Rätt! I 3 402 står 4:an på tiotalens plats.",
+    feedback_wrong:"Tänk på positionssystemet: enheter, tiotal, hundratal, tusental. Var står 4:an i varje tal?",
+    facit:"Rätt svar: 3 402. Siffrorna från höger: 2 = enheter, 0 = tiotal... nej, 0 på tiotalens plats. Låt oss räkna: 3 402 → 2=enheter, 0=tiotal, 4=hundratal... Obs: rätt svar är 3 402 där 4:an faktiskt är på hundratals plats. Kontrollera med din lärare!"},
+  {id:3,subject:"Matematik",type:"open",useLevels:false,
+    text:"Vilket tal är störst: 4 072, 4 720 eller 4 207? Förklara hur du tänkte.",
+    tip:"Jämför siffrorna från vänster, position för position.",
+    facit:"4 720 är störst. Alla tal börjar med 4 (tusental), men på hundratals plats har 4 720 en 7:a, vilket är mer än 0:an i 4 072 och 2:an i 4 207.",
+    aiRubric:"Rätt svar är 4 720. Bedöm elevsvaret: 'a'=rätt svar med tydlig förklaring av positionssystemet och hur de jämförde siffrorna position för position, 'c'=rätt svar med någon förklaring men inte helt tydlig, 'e'=rätt svar utan förklaring, 'wrong'=fel svar eller inget svar. Sätt saker=false om svaret är oklart. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\",\"saker\":true}"},
+  {id:4,subject:"NO",type:"open",useLevels:false,
+    text:"Vi ska snart börja arbeta med krafter i NO. Vad tror du att en kraft är? Ge ett eget exempel på en kraft du känner till.",
+    tip:"Tänk på saker som rör sig, stannar, trycks eller dras. Vad händer egentligen?",
+    facit:"En kraft är något som kan påverka ett föremål – få det att röra sig, stanna, ändra riktning eller ändra form. Exempel: tyngdkraften drar saker neråt, friktionskraften bromsar en boll som rullar.",
+    aiRubric:"Detta är en öppen introfråga utan krav på förkunskaper. Bedöm om eleven visar nyfikenhet och resonerar kring rörelse eller påverkan: 'a'=beskriver en kraft med ett träffsäkert exempel och förklarar vad kraften gör, 'c'=nämner ett rimligt exempel med viss förklaring, 'e'=ger ett exempel men utan förklaring, 'wrong'=svarar inte alls eller skriver något helt irrelevant. Sätt saker=true om svaret är tydligt. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\",\"saker\":true}"},
+  {id:5,subject:"SO",type:"open",useLevels:true,
+    text:"Vi har börjat arbeta med stormaktstiden. Vad vet du om Sverige under stormaktstiden? Berätta vad du kommer ihåg.",
+    tip:"Tänk på vilka länder Sverige kontrollerade, vilka kungar som styrde, och varför det kallas stormaktstiden.",
+    kompletteraTip:"Försök lägga till något om varför Sverige fick och sedan förlorade sin stormaktsställning, eller nämn en specifik kung eller händelse.",
     levels:{
-      e:{example:"\"En berättande text berättar en historia, till exempel en bok. En förklarande text förklarar saker, till exempel ett faktablad.\""},
-      c:{example:"\"En berättande text har en handling och karaktärer som man följer, till exempel en roman. En förklarande text beskriver hur eller varför något fungerar, till exempel ett avsnitt i en lärobok om hur kroppen fungerar.\""},
-      a:{example:"\"Berättande texter vill engagera läsaren i en historia med karaktärer och händelser, som i en roman eller saga. Förklarande texter vill ge läsaren kunskap om hur eller varför något fungerar, som ett faktablad om rymden. Skillnaden handlar alltså om vad texten vill åstadkomma hos den som läser.\""}
+      e:{example:"\"Sverige var ett stort land förut och hade krig. Det var länge sedan.\" (Enkel beskrivning med något relevant begrepp eller faktum.)"},
+      c:{example:"\"Under stormaktstiden på 1600-talet var Sverige en stormakt i Europa och kontrollerade stora delar av Östersjöns kuster. Karl XII var en känd kung. Sverige förlorade till slut sin makt.\""},
+      a:{example:"\"Stormaktstiden varade ungefär 1611–1721. Sverige var en av Europas ledande militära makter och kontrollerade stora delar av Östersjöregionen. Kungar som Gustav II Adolf och Karl XII spelade stor roll. Stormaktstiden slutade i och med Stora nordiska kriget när Sverige förlorade mot Ryssland och dess allierade.\""}
     },
-    aiRubric:"Bedöm elevsvaret på frågan om berättande och förklarande text. VIKTIGT: Exempel måste vara faktiska skriftliga texttyper (bok, roman, faktablad, recept, instruktion, artikel etc). Muntliga situationer som 'läraren förklarar' eller 'när någon berättar' är INTE exempel på texttyper och ska ge lägre bedömning. 'a'=tydlig förklaring av båda texttypers syfte plus träffsäkra skriftliga exempel, 'c'=förklarar skillnaden och ger skriftliga exempel men utan djupare analys, 'e'=nämner att de är olika men exemplen är svaga, felaktiga eller saknas, 'wrong'=missförstår helt eller svarar inte. Sätt saker=false om svaret är tvetydigt, blandar nivåer, eller om du är osäker på bedömningen. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\",\"saker\":true}"},
-  {id:3,subject:"NO",type:"multiple",
-    text:"Vilket av dessa är ett exempel på ett ekosystem?",
-    options:["En sten i skogen","En sjö med växter, djur och mikroorganismer","Solsystemet","En fotosyntesreaktion"],
-    correct:1,
-    feedback_correct:"Precis! Ett ekosystem är levande organismer och deras miljö som samverkar.",
-    feedback_wrong:"Ett ekosystem kräver levande organismer som samverkar med sin miljö.",
-    facit:"Rätt svar: en sjö med växter, djur och mikroorganismer."},
-  {id:4,subject:"Matematik",type:"open",useLevels:false,
-    text:"Lisa cyklar 3 km på 12 minuter. Hur lång tid tar det henne att cykla 10 km? Visa hur du tänker.",
-    tip:"Börja med att räkna ut hur lång tid det tar per kilometer.",
-    facit:"3 km på 12 min → 1 km tar 4 min. 10 km × 4 min = 40 minuter.",
-    aiRubric:"Rätt svar är 40 minuter. Bedöm elevsvaret strängt: 'a'=rätt svar (40 min) med tydligt räknesätt eller resonemang, 'c'=rätt svar men utan resonemang, 'e'=fel svar men visar relevant matematiskt tänkande, 'wrong'=fel svar utan räknesätt, nonsens-svar, svar som inte är numeriska, eller svar som inte försöker lösa uppgiften. Sätt saker=false om svaret är oklart eller svårtolkat. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\",\"saker\":true}"},
-  {id:5,subject:"Svenska",type:"multiple",
-    text:"Vilket ord är ett substantiv?",
-    options:["Snabbt","Springa","Träd","Grön"],correct:2,
-    feedback_correct:"Rätt! Träd är ett substantiv eftersom det betecknar ett ting.",
-    feedback_wrong:"Substantiv betecknar personer, platser, ting eller fenomen. Vilket ord gör det?",
-    facit:"Rätt svar: Träd. Snabbt = adverb, Springa = verb, Grön = adjektiv."}
+    aiRubric:"Bedöm elevsvaret om stormaktstiden. 'a'=tydlig och nyanserad beskrivning med flera korrekta fakta, begrepp och/eller orsakssamband, 'c'=korrekt men relativt enkel beskrivning med minst ett konkret faktum eller begrepp, 'e'=visar viss kännedom men vagt eller med fel, 'wrong'=svarar inte eller skriver något irrelevant. Sätt saker=false om du är osäker på bedömningen. Svara BARA med JSON utan markdown: {\"level\":\"c\",\"reason\":\"kort motivering på svenska max 15 ord\",\"saker\":true}"}
 ]};
+
 
 // ── SHEETS ──────────────────────────────────────────────────
 let ovningHistory=[];
@@ -846,6 +846,9 @@ async function kollakodord(){
   document.getElementById('loginError').textContent='';
   _loginKodord=code;
 
+  // DEMO – hoppa direkt till demoläge
+  if(code===DEMO_KOD){slutforInlogg(code);return;}
+
   // Kolla om pinkod finns
   const btn=document.querySelector('#loginSteg1 button');
   if(btn){btn.textContent='Kollar...';btn.disabled=true;}
@@ -935,6 +938,27 @@ async function initElevApp(){
   // Återställ cache-flaggor
   _laddatProfil=false;_laddatMal=false;_laddatOvningar=false;_laddatMeddelanden=false;
 
+  if(currentStudent===DEMO_KOD){
+    elevHistory=[
+      {student:'DEMO',week:currentWeek-2,score:72,timestamp:'08:45',durationMin:8,answers:[]},
+      {student:'DEMO',week:currentWeek-1,score:84,timestamp:'09:02',durationMin:7,answers:[]},
+    ];
+    malData={};
+    ovningHistory=[
+      {kodord:'DEMO',datum:new Date().toLocaleDateString('sv-SE'),tid:'09:10',amne:'NO (Kemi)',typ:'blandad',antal:10,ratt:8,pct:80,fragor:[]},
+      {kodord:'DEMO',datum:new Date().toLocaleDateString('sv-SE'),tid:'09:30',amne:'Svenska',typ:'blandad',antal:10,ratt:7,pct:70,fragor:[]},
+    ];
+    window._hemUppgifter=[
+      {id:'demo1',typ:'lax',amne:'Matematik',titel:'Läxa s. 42–44',datum:new Date().toLocaleDateString('sv-SE'),info:'Tal 1–15 på sidan 42.'},
+      {id:'demo2',typ:'prov',amne:'SO',titel:'Prov hinduism & buddhism',datum:new Date(Date.now()+86400000).toLocaleDateString('sv-SE'),info:'Se studiehandledning.'},
+    ];
+    window._elevMeddelanden=[
+      {id:'d1',kodord:'DEMO',datum:'2026-04-14',tid:'10:00',text:'Kan jag få hjälp med matematikläxan?',svar:'Självklart! Vi tar det på måndag.',svarDatum:'2026-04-14',svarTid:'11:30'},
+    ];
+    renderHem();
+    return;
+  }
+
   // ETT batch-anrop för all elevdata
   try{
     const url=new URL(SHEETS_URL);
@@ -958,6 +982,17 @@ async function initElevApp(){
 
 // ── HEM ─────────────────────────────────────────────────────
 function renderHem(){
+  // Demo-banner
+  const hemWrap=document.querySelector('.hem-wrap');
+  const gamlaBanner=document.getElementById('demoBanner');
+  if(gamlaBanner)gamlaBanner.remove();
+  if(currentStudent===DEMO_KOD&&hemWrap){
+    const banner=document.createElement('div');
+    banner.id='demoBanner';
+    banner.innerHTML='<div style="background:#e8f0ff;border:2px solid var(--accent2);border-radius:14px;padding:16px 20px;margin-bottom:20px;"><div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent2);margin-bottom:6px;">👀 Demoläge</div><div style="font-size:.9rem;line-height:1.6;color:var(--ink);">Du ser en exempelversion av appen. All data är påhittad och inget sparas.<br><br><strong>Vad kan eleverna göra?</strong><br>📝 <strong>Quiz</strong> – Fredagsquiz varje vecka med självbedömning och AI-feedback.<br>📊 <strong>Statistik</strong> – Följ sin utveckling över tid.<br>🎯 <strong>Mål</strong> – Bocka av kunskapsmål per ämne.<br>🔢 <strong>Öva</strong> – Övningar i matte, SO, svenska och NO.<br>✉️ <strong>Meddelanden</strong> – Kontakta läraren direkt i appen.</div></div>';
+    hemWrap.prepend(banner);
+  }
+
   const avgScore=elevHistory.length?Math.round(elevHistory.reduce((s,h)=>s+(parseInt(h.score)||0),0)/elevHistory.length):null;
   const bestScore=elevHistory.length?Math.max(...elevHistory.map(h=>parseInt(h.score)||0)):null;
 
